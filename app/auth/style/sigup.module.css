@@ -1,0 +1,25 @@
+.signup{
+    color:white;
+    margin-left:20%;
+    margin-top:8%;
+    width:50%;
+    background-color: rgb(4, 243, 4); 
+    
+    padding:15px;
+    border-radius:10px;
+    /* animation: log-background 5s infinite; */
+}
+@keyframes log-background {
+    0%{
+       background-color:rgb(4, 243, 4); 
+    }
+    50%{
+        background-color:linear-gradient(135deg,black,blue);
+    }
+    75%{
+        background-color:linear-gradient(135deg,yellow,rgb(65, 0, 150));
+    }
+    100%{
+        background-color:linear-gradient(135deg,green,rgb(125, 1, 156));
+    }
+}

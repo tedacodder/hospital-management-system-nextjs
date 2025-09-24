@@ -1,0 +1,28 @@
+.login{
+    color:white;
+    margin-left:20%;
+    margin-top:8%;
+    width:50%;
+    background-color:rgba(1, 156, 9, 1);
+    padding:15px;
+    border-radius:10px;
+    animation: log-background 10s infinite;
+}
+
+@keyframes log-background {
+    0%{
+       background-color:rgb(4, 5, 4); 
+    }
+    25%{
+        background-color:rgb(1, 63, 156);
+    }
+    50%{
+        background-color:rgb(1, 37, 156);
+    }
+    75%{
+        background-color:rgb(65, 0, 150);
+    }
+    100%{
+        background-color:rgb(125, 1, 156);
+    }
+}

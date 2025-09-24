@@ -1,0 +1,39 @@
+/* Hero Section */
+.emergency-hero {
+  background: url("https://images.unsplash.com/photo-1584362917165-651b5a486e4a") 
+    no-repeat center center/cover;
+  min-height: 70vh;
+  position: relative;
+}
+.emergency-hero::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(180, 0, 0, 0.6);
+  z-index: 1;
+}
+.emergency-hero .container {
+  position: relative;
+  z-index: 2;
+}
+
+/* Emergency cards */
+.emergency-card {
+  border-radius: 12px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.emergency-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 8px 20px rgba(255, 0, 0, 0.3);
+}
+
+/* Responsive text */
+@media (max-width: 768px) {
+  .emergency-hero h1 {
+    font-size: 2rem;
+  }
+  .emergency-hero p {
+    font-size: 1rem;
+  }
+}

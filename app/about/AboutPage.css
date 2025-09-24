@@ -1,0 +1,43 @@
+/* Hero Section */
+.about-hero {
+  background: url("https://images.unsplash.com/photo-1587370560942-ad2a04eabb6d") 
+    no-repeat center center/cover;
+  min-height: 60vh;
+  position: relative;
+}
+.about-hero::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0, 50, 100, 0.6);
+  z-index: 1;
+}
+.about-hero .container {
+  position: relative;
+  z-index: 2;
+}
+
+/* Cards hover effect */
+.feature-card, .team-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border-radius: 12px;
+}
+.feature-card:hover, .team-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+}
+.team-card img {
+  height: 250px;
+  object-fit: cover;
+}
+
+/* Responsive text */
+@media (max-width: 768px) {
+  .about-hero h1 {
+    font-size: 2rem;
+  }
+  .about-hero p {
+    font-size: 1rem;
+  }
+}
