@@ -166,13 +166,8 @@ const About = () => {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-primary text-white text-center p-4 mt-5">
-        <p className="mb-0">
-          &copy; {new Date().getFullYear()} MediCare+ Hospital Management
-          System. All rights reserved.
-        </p>
-      </footer>
+      
+      
     </div>
   );
 };

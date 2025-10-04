@@ -1,13 +1,8 @@
 "use client";
-//import { Routes, Route, Link } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
-// import { Moon, Sun } from "lucide-react";
-// import { useEffect } from "react";
 import Link from "next/link";
-
 import { useTheme } from "../context/ThemeContext";
 import { Button } from "react-bootstrap";
-
 interface prop {
   items: { pathname: string; path: string }[];
   Role?: string;

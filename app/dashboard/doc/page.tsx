@@ -1,173 +1,587 @@
-"use client"
-import React, { useEffect } from "react";
-import "bootstrap/dist/css/bootstrap.min.css";
-import "bootstrap-icons/font/bootstrap-icons.css";
-import AOS from "aos";
-import "aos/dist/aos.css";
-import "./DoctorDashboard.css";
-import DocNav from "../../components/DocNav";
+"use client";
+import React, { useState } from "react";
+import Dashboard from "../../components/Dashboard";
+interface Appointment {
+  time: string;
+  patient: string;
+  type: string;
+  status: "confirmed" | "pending" | "urgent";
+}
 
-const Doctorsdb = () => {
-  useEffect(() => {
-    AOS.init({ duration: 1000, once: true });
-  }, []);
+interface Patient {
+  name: string;
+  id: string;
+  lastVisit: string;
+  condition: string;
+}
 
+interface NewPatient {
+  firstName: string;
+  lastName: string;
+  age: number;
+  gender: string;
+  phone: string;
+  email: string;
+  address: string;
+  medicalHistory: string;
+}
+
+interface NewAppointment {
+  patient: string;
+  date: string;
+  time: string;
+  type: string;
+  notes: string;
+}
+
+interface Prescription {
+  patient: string;
+  medication: string;
+  dosage: string;
+  frequency: string;
+  duration: string;
+  instructions: string;
+}
+
+interface ModalProps {
+  show: boolean;
+  title: string;
+  children: React.ReactNode;
+  onClose: () => void;
+}
+
+const Modal: React.FC<ModalProps> = ({ show, title, children, onClose }) => {
+  if (!show) return null;
   return (
-    <>
-      <DocNav />
-
-      <div className="d-flex m-4">
-        {/* Sidebar */}
-        <div className="sidebar bg-primary text-white p-3">
-          <h3 className="fw-bold mb-4">MediCare+</h3>
-          <ul className="nav flex-column">
-            <li className="nav-item mb-2">
-              <a href="#" className="nav-link text-white">
-                <i className="bi bi-house-door me-2"></i> Dashboard
-              </a>
-            </li>
-            <li className="nav-item mb-2">
-              <a href="#" className="nav-link text-white">
-                <i className="bi bi-calendar-check me-2"></i> Appointments
-              </a>
-            </li>
-            <li className="nav-item mb-2">
-              <a href="#" className="nav-link text-white">
-                <i className="bi bi-people me-2"></i> Patients
-              </a>
-            </li>
-            <li className="nav-item mb-2">
-              <a href="#" className="nav-link text-white">
-                <i className="bi bi-chat-dots me-2"></i> Messages
-              </a>
-            </li>
-            <li className="nav-item mb-2">
-              <a href="#" className="nav-link text-white">
-                <i className="bi bi-person-circle me-2"></i> Profile
-              </a>
-            </li>
-          </ul>
-        </div>
-
-        {/* Main Content */}
-        <div className="content flex-grow-1 p-4">
-          <h2 className="fw-bold mb-4" data-aos="fade-down">
-            👨‍⚕️ Doctor Dashboard
-          </h2>
-
-          {/* Stats */}
-          <div className="row mb-4">
-            {[
-              { icon: "bi-calendar-check", title: "Appointments", count: 12 },
-              { icon: "bi-people", title: "Patients", count: 48 },
-              { icon: "bi-chat-dots", title: "Messages", count: 5 },
-              { icon: "bi-bell", title: "Notifications", count: 3 },
-            ].map((stat, index) => (
-              <div
-                className="col-md-3 mb-3"
-                key={index}
-                data-aos="fade-up"
-                data-aos-delay={index * 200}
-              >
-                <div className="card stat-card shadow-sm">
-                  <div className="card-body text-center">
-                    <i className={`${stat.icon} display-6 text-primary`}></i>
-                    <h5 className="mt-2">{stat.title}</h5>
-                    <p className="fw-bold fs-4">{stat.count}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
+    <div
+      className="modal-overlay position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center"
+      style={{ background: "rgba(0,0,0,0.5)", zIndex: 2000 }}
+      onClick={(e) => {
+        if ((e.target as HTMLElement).classList.contains("modal-overlay"))
+          onClose();
+      }}
+    >
+      <div
+        className="modal-content bg-white rounded shadow"
+        style={{ maxWidth: "42rem", width: "90%" }}
+      >
+        <div className="p-4">
+          <div className="d-flex justify-content-between align-items-center mb-4">
+            <h5 className="mb-0">{title}</h5>
+            <button
+              type="button"
+              className="btn-close"
+              onClick={onClose}
+            ></button>
           </div>
-
-          {/* Upcoming Appointments */}
-          <div className="card shadow-sm mb-4" data-aos="fade-right">
-            <div className="card-header bg-primary text-white fw-bold">
-              Upcoming Appointments
-            </div>
-            <div className="card-body">
-              <table className="table table-hover">
-                <thead>
-                  <tr>
-                    <th>Patient</th>
-                    <th>Date</th>
-                    <th>Time</th>
-                    <th>Reason</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>John Doe</td>
-                    <td>28 Aug 2025</td>
-                    <td>10:30 AM</td>
-                    <td>General Checkup</td>
-                    <td>
-                      <span className="badge bg-success">Confirmed</span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>Emily Smith</td>
-                    <td>28 Aug 2025</td>
-                    <td>11:15 AM</td>
-                    <td>Cardiology</td>
-                    <td>
-                      <span className="badge bg-warning">Pending</span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>Michael Lee</td>
-                    <td>29 Aug 2025</td>
-                    <td>09:00 AM</td>
-                    <td>Pediatrics</td>
-                    <td>
-                      <span className="badge bg-success">Confirmed</span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Patient List */}
-          <div className="card shadow-sm mb-4" data-aos="fade-left">
-            <div className="card-header bg-primary text-white fw-bold">
-              My Patients
-            </div>
-            <div className="card-body">
-              <ul className="list-group">
-                <li className="list-group-item d-flex justify-content-between align-items-center">
-                  John Doe <span className="badge bg-info">Diabetes</span>
-                </li>
-                <li className="list-group-item d-flex justify-content-between align-items-center">
-                  Emily Smith <span className="badge bg-info">Cardiac</span>
-                </li>
-                <li className="list-group-item d-flex justify-content-between align-items-center">
-                  Michael Lee <span className="badge bg-info">Pediatric</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          {/* Messages */}
-          <div className="card shadow-sm" data-aos="fade-up">
-            <div className="card-header bg-primary text-white fw-bold">
-              Messages
-            </div>
-            <div className="card-body">
-              <div className="alert alert-info">
-                <strong>Patient John Doe:</strong> "Doctor, should I continue
-                the same medication?"
-              </div>
-              <div className="alert alert-warning">
-                <strong>Admin:</strong> "Reminder: Staff meeting at 5 PM today."
-              </div>
-            </div>
-          </div>
+          {children}
         </div>
       </div>
-    </>
+    </div>
   );
 };
 
-export default Doctorsdb;
+const Dashboard: React.FC = () => {
+  const [appointments] = useState<Appointment[]>([
+    {
+      time: "09:00 AM",
+      patient: "John Smith",
+      type: "Regular Checkup",
+      status: "confirmed",
+    },
+    {
+      time: "10:30 AM",
+      patient: "Mary Johnson",
+      type: "Follow-up",
+      status: "confirmed",
+    },
+    {
+      time: "11:00 AM",
+      patient: "Robert Brown",
+      type: "Consultation",
+      status: "pending",
+    },
+    {
+      time: "02:00 PM",
+      patient: "Lisa Davis",
+      type: "Emergency",
+      status: "urgent",
+    },
+    {
+      time: "03:30 PM",
+      patient: "Mike Wilson",
+      type: "Regular Checkup",
+      status: "confirmed",
+    },
+  ]);
+
+  const [recentPatients, setRecentPatients] = useState<Patient[]>([
+    {
+      name: "John Smith",
+      id: "P001",
+      lastVisit: "2024-01-15",
+      condition: "Hypertension",
+    },
+    {
+      name: "Mary Johnson",
+      id: "P002",
+      lastVisit: "2024-01-14",
+      condition: "Diabetes",
+    },
+    {
+      name: "Robert Brown",
+      id: "P003",
+      lastVisit: "2024-01-13",
+      condition: "Asthma",
+    },
+    {
+      name: "Lisa Davis",
+      id: "P004",
+      lastVisit: "2024-01-12",
+      condition: "Migraine",
+    },
+  ]);
+
+  const [showAddPatientModal, setShowAddPatientModal] = useState(false);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [showPrescriptionModal, setShowPrescriptionModal] = useState(false);
+
+  const [newPatient, setNewPatient] = useState<NewPatient>({
+    firstName: "",
+    lastName: "",
+    age: 0,
+    gender: "",
+    phone: "",
+    email: "",
+    address: "",
+    medicalHistory: "",
+  });
+
+  const [newAppointment, setNewAppointment] = useState<NewAppointment>({
+    patient: "",
+    date: "",
+    time: "",
+    type: "",
+    notes: "",
+  });
+
+  const [newPrescription, setNewPrescription] = useState<Prescription>({
+    patient: "",
+    medication: "",
+    dosage: "",
+    frequency: "",
+    duration: "",
+    instructions: "",
+  });
+
+  const handleAddPatientSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const patientId = `P${Math.floor(Math.random() * 1000)
+      .toString()
+      .padStart(3, "0")}`;
+    const fullName = `${newPatient.firstName} ${newPatient.lastName}`;
+    setRecentPatients([
+      ...recentPatients,
+      {
+        name: fullName,
+        id: patientId,
+        lastVisit: new Date().toISOString().slice(0, 10),
+        condition: "New",
+      },
+    ]);
+    setShowAddPatientModal(false);
+    setNewPatient({
+      firstName: "",
+      lastName: "",
+      age: 0,
+      gender: "",
+      phone: "",
+      email: "",
+      address: "",
+      medicalHistory: "",
+    });
+  };
+
+  const handleScheduleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log("Schedule Appointment:", newAppointment);
+    setShowScheduleModal(false);
+    setNewAppointment({ patient: "", date: "", time: "", type: "", notes: "" });
+  };
+
+  const handlePrescriptionSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log("Prescription:", newPrescription);
+    setShowPrescriptionModal(false);
+    setNewPrescription({
+      patient: "",
+      medication: "",
+      dosage: "",
+      frequency: "",
+      duration: "",
+      instructions: "",
+    });
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "confirmed":
+        return "#198754";
+      case "pending":
+        return "#ffc107";
+      case "urgent":
+        return "#dc3545";
+      default:
+        return "#6c757d";
+    }
+  };
+
+  return (
+    <div>
+      {/* Stats, Appointments, Quick Actions same as previous example */}
+      <Dashboard />
+      {/* Quick Actions */}
+      <div className="col-lg-4">
+        <div className="card h-100">
+          <div className="card-header">
+            <h5 className="mb-0">Quick Actions</h5>
+          </div>
+          <div className="card-body">
+            <button
+              className="quick-action-btn w-100 mb-2"
+              onClick={() => setShowAddPatientModal(true)}
+            >
+              <i className="bi bi-person-plus me-2"></i>Add Patient
+            </button>
+            <button
+              className="quick-action-btn w-100 mb-2"
+              onClick={() => setShowScheduleModal(true)}
+            >
+              <i className="bi bi-calendar-plus me-2"></i>Schedule Appointment
+            </button>
+            <button
+              className="quick-action-btn w-100 mb-2"
+              onClick={() => setShowPrescriptionModal(true)}
+            >
+              <i className="bi bi-capsule me-2"></i>Write Prescription
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Modals */}
+      <Modal
+        show={showAddPatientModal}
+        title="Add New Patient"
+        onClose={() => setShowAddPatientModal(false)}
+      >
+        <form onSubmit={handleAddPatientSubmit}>
+          <div className="row g-3 mb-3">
+            <div className="col-md-6">
+              <label className="form-label">First Name</label>
+              <input
+                type="text"
+                className="form-control"
+                value={newPatient.firstName}
+                onChange={(e) =>
+                  setNewPatient({ ...newPatient, firstName: e.target.value })
+                }
+              />
+            </div>
+            <div className="col-md-6">
+              <label className="form-label">Last Name</label>
+              <input
+                type="text"
+                className="form-control"
+                value={newPatient.lastName}
+                onChange={(e) =>
+                  setNewPatient({ ...newPatient, lastName: e.target.value })
+                }
+              />
+            </div>
+          </div>
+          <div className="row g-3 mb-3">
+            <div className="col-md-6">
+              <label className="form-label">Age</label>
+              <input
+                type="number"
+                className="form-control"
+                value={newPatient.age}
+                onChange={(e) =>
+                  setNewPatient({ ...newPatient, age: +e.target.value })
+                }
+              />
+            </div>
+            <div className="col-md-6">
+              <label className="form-label">Gender</label>
+              <select
+                className="form-select"
+                value={newPatient.gender}
+                onChange={(e) =>
+                  setNewPatient({ ...newPatient, gender: e.target.value })
+                }
+              >
+                <option value="">Select gender</option>
+                <option>Male</option>
+                <option>Female</option>
+                <option>Other</option>
+              </select>
+            </div>
+          </div>
+          <div className="mb-3">
+            <label className="form-label">Phone</label>
+            <input
+              type="tel"
+              className="form-control"
+              value={newPatient.phone}
+              onChange={(e) =>
+                setNewPatient({ ...newPatient, phone: e.target.value })
+              }
+            />
+          </div>
+          <div className="mb-3">
+            <label className="form-label">Email</label>
+            <input
+              type="email"
+              className="form-control"
+              value={newPatient.email}
+              onChange={(e) =>
+                setNewPatient({ ...newPatient, email: e.target.value })
+              }
+            />
+          </div>
+          <div className="mb-3">
+            <label className="form-label">Address</label>
+            <textarea
+              className="form-control"
+              rows={2}
+              value={newPatient.address}
+              onChange={(e) =>
+                setNewPatient({ ...newPatient, address: e.target.value })
+              }
+            ></textarea>
+          </div>
+          <div className="mb-4">
+            <label className="form-label">Medical History</label>
+            <textarea
+              className="form-control"
+              rows={3}
+              value={newPatient.medicalHistory}
+              onChange={(e) =>
+                setNewPatient({ ...newPatient, medicalHistory: e.target.value })
+              }
+            ></textarea>
+          </div>
+          <div className="d-flex justify-content-end gap-2">
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => setShowAddPatientModal(false)}
+            >
+              Cancel
+            </button>
+            <button type="submit" className="btn btn-primary">
+              Add Patient
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Schedule Appointment Modal */}
+      <Modal
+        show={showScheduleModal}
+        title="Schedule Appointment"
+        onClose={() => setShowScheduleModal(false)}
+      >
+        <form onSubmit={handleScheduleSubmit}>
+          <div className="mb-3">
+            <label className="form-label">Patient</label>
+            <input
+              type="text"
+              className="form-control"
+              value={newAppointment.patient}
+              onChange={(e) =>
+                setNewAppointment({
+                  ...newAppointment,
+                  patient: e.target.value,
+                })
+              }
+            />
+          </div>
+          <div className="row g-3 mb-3">
+            <div className="col-md-6">
+              <label className="form-label">Date</label>
+              <input
+                type="date"
+                className="form-control"
+                value={newAppointment.date}
+                onChange={(e) =>
+                  setNewAppointment({ ...newAppointment, date: e.target.value })
+                }
+              />
+            </div>
+            <div className="col-md-6">
+              <label className="form-label">Time</label>
+              <input
+                type="time"
+                className="form-control"
+                value={newAppointment.time}
+                onChange={(e) =>
+                  setNewAppointment({ ...newAppointment, time: e.target.value })
+                }
+              />
+            </div>
+          </div>
+          <div className="mb-3">
+            <label className="form-label">Appointment Type</label>
+            <select
+              className="form-select"
+              value={newAppointment.type}
+              onChange={(e) =>
+                setNewAppointment({ ...newAppointment, type: e.target.value })
+              }
+            >
+              <option>Regular Consultation</option>
+              <option>Follow-up</option>
+              <option>Emergency</option>
+              <option>Procedure</option>
+            </select>
+          </div>
+          <div className="mb-4">
+            <label className="form-label">Notes</label>
+            <textarea
+              className="form-control"
+              rows={3}
+              value={newAppointment.notes}
+              onChange={(e) =>
+                setNewAppointment({ ...newAppointment, notes: e.target.value })
+              }
+            ></textarea>
+          </div>
+          <div className="d-flex justify-content-end gap-2">
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => setShowScheduleModal(false)}
+            >
+              Cancel
+            </button>
+            <button type="submit" className="btn btn-primary">
+              Schedule
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Write Prescription Modal */}
+      <Modal
+        show={showPrescriptionModal}
+        title="Write Prescription"
+        onClose={() => setShowPrescriptionModal(false)}
+      >
+        <form onSubmit={handlePrescriptionSubmit}>
+          <div className="mb-3">
+            <label className="form-label">Patient</label>
+            <input
+              type="text"
+              className="form-control"
+              value={newPrescription.patient}
+              onChange={(e) =>
+                setNewPrescription({
+                  ...newPrescription,
+                  patient: e.target.value,
+                })
+              }
+            />
+          </div>
+          <div className="mb-3">
+            <label className="form-label">Medication</label>
+            <input
+              type="text"
+              className="form-control"
+              value={newPrescription.medication}
+              onChange={(e) =>
+                setNewPrescription({
+                  ...newPrescription,
+                  medication: e.target.value,
+                })
+              }
+            />
+          </div>
+          <div className="row g-3 mb-3">
+            <div className="col-md-4">
+              <label className="form-label">Dosage</label>
+              <input
+                type="text"
+                className="form-control"
+                value={newPrescription.dosage}
+                onChange={(e) =>
+                  setNewPrescription({
+                    ...newPrescription,
+                    dosage: e.target.value,
+                  })
+                }
+              />
+            </div>
+            <div className="col-md-4">
+              <label className="form-label">Frequency</label>
+              <input
+                type="text"
+                className="form-control"
+                value={newPrescription.frequency}
+                onChange={(e) =>
+                  setNewPrescription({
+                    ...newPrescription,
+                    frequency: e.target.value,
+                  })
+                }
+              />
+            </div>
+            <div className="col-md-4">
+              <label className="form-label">Duration</label>
+              <input
+                type="text"
+                className="form-control"
+                value={newPrescription.duration}
+                onChange={(e) =>
+                  setNewPrescription({
+                    ...newPrescription,
+                    duration: e.target.value,
+                  })
+                }
+              />
+            </div>
+          </div>
+          <div className="mb-4">
+            <label className="form-label">Instructions</label>
+            <textarea
+              className="form-control"
+              rows={3}
+              value={newPrescription.instructions}
+              onChange={(e) =>
+                setNewPrescription({
+                  ...newPrescription,
+                  instructions: e.target.value,
+                })
+              }
+            ></textarea>
+          </div>
+          <div className="d-flex justify-content-end gap-2">
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => setShowPrescriptionModal(false)}
+            >
+              Cancel
+            </button>
+            <button type="submit" className="btn btn-primary">
+              Submit
+            </button>
+          </div>
+        </form>
+      </Modal>
+    </div>
+  );
+};
+
+export default Dashboard;

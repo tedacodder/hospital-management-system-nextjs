@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import React, { useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
@@ -28,7 +28,7 @@ const Emergency = () => {
               <i className="bi bi-telephone-inbound-fill me-2"></i> Dial:{" "}
               <span className="text-warning">+91 112 / 911</span>
             </h2>
-            <a href="tel:112" className="btn btn-danger btn-lg mt-3 shadow-lg">
+            <a href="tel:906" className="btn btn-danger btn-lg mt-3 shadow-lg">
               📞 Call Now
             </a>
           </div>
@@ -41,13 +41,13 @@ const Emergency = () => {
           </h2>
           <div className="row text-center">
             {[
-              { icon: "bi-truck", title: "Ambulance", number: "+91 102" },
+              { icon: "bi-truck", title: "Ambulance", number: "907" },
               {
                 icon: "bi-shield-fill-exclamation",
                 title: "Police",
-                number: "+25191 100",
+                number: "991",
               },
-              { icon: "bi-fire", title: "Fire Brigade", number: "+91 101" },
+              { icon: "bi-fire", title: "Fire Brigade", number: "939" },
             ].map((item, index) => (
               <div
                 className="col-md-4 mb-4"
@@ -157,14 +157,6 @@ const Emergency = () => {
             </div>
           </form>
         </section>
-
-        {/* Footer */}
-        <footer className="bg-danger text-white text-center p-4 mt-5">
-          <p className="mb-0">
-            &copy; {new Date().getFullYear()} MediCare+ Emergency Services. Stay
-            safe.
-          </p>
-        </footer>
       </div>
     </>
   );
