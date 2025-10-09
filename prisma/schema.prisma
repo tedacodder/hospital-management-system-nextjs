@@ -1,9 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,7 +10,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ✅ Base User
+//  Base User
 model User {
   id        String   @id @default(cuid())
   name      String?
@@ -27,14 +24,14 @@ model User {
   doctor  Doctor?
 }
 
-// ✅ Role Enum
+//  Role Enum
 enum Role {
   PATIENT
   DOCTOR
   ADMIN
 }
 
-// ✅ Patients
+//  Patients
 model Patient {
   id             String          @id @default(cuid())
   userId         String          @unique
@@ -43,7 +40,7 @@ model Patient {
   appointments   Appointment[]
 }
 
-// ✅ Doctors
+//  Doctors
 model Doctor {
   id             String        @id @default(cuid())
   userId         String        @unique
@@ -52,7 +49,7 @@ model Doctor {
   appointments   Appointment[]
 }
 
-// ✅ Appointments
+//  Appointments
 model Appointment {
   id        String   @id @default(cuid())
   date      DateTime
@@ -62,7 +59,7 @@ model Appointment {
   doctor    Doctor   @relation(fields: [doctorId], references: [id])
 }
 
-// ✅ Medical Records
+//  Medical Records
 model MedicalRecord {
   id        String   @id @default(cuid())
   details   String

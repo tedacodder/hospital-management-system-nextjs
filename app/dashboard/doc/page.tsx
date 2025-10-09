@@ -1,5 +1,7 @@
 "use client";
-
+import { useGetAllpatientQuery } from "../../redux/api/patients";
+import { signOut, useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Modal } from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
@@ -30,12 +32,22 @@ type Appointment = {
 };
 
 export default function DashboardPage() {
+  const patient = useGetAllpatientQuery();
+  console.log(patient);
   useEffect(() => {
     AOS.init({
       duration: 700,
       once: true,
     });
   }, []);
+
+  const router = useRouter();
+  const { data: session } = useSession();
+
+  const handleLogout = async () => {
+    await signOut({ redirect: false });
+    router.push("/login");
+  };
 
   const [now, setNow] = useState<Date>(new Date());
 
@@ -316,7 +328,7 @@ export default function DashboardPage() {
               }`}
               style={{
                 borderRadius: 8,
-                margin: "6px 12px",
+                margin: "6px",
                 background: activeItem === item.key ? "#5D5CDE" : "transparent",
               }}
             >
@@ -328,7 +340,7 @@ export default function DashboardPage() {
 
         <div
           className="doctor-profile p-3 "
-          style={{ position: "absolute", bottom: -150, width: "100%" }}
+          style={{ position: "absolute", bottom: -130, width: "100%" }}
         >
           <div className="d-flex align-items-center mt-auto">
             <div
@@ -342,7 +354,7 @@ export default function DashboardPage() {
               Dr
             </div>
             <div className="flex-fill  text-center border-top pt-3">
-              <div className="fw-medium small">Dr. Abel Girma</div>
+              <div className="fw-medium small">Dr. {session?.user?.name}</div>
               <div className="text-muted" style={{ fontSize: "0.75rem" }}>
                 Cardiology
               </div>
@@ -416,6 +428,12 @@ export default function DashboardPage() {
                     minute: "2-digit",
                   })}
                 </div>
+                <button
+                  className="text-start btn btn-danger btn-sm"
+                  onClick={handleLogout}
+                >
+                  Logout
+                </button>
               </div>
             </div>
           </div>
@@ -465,7 +483,7 @@ export default function DashboardPage() {
                     <div className="opacity-75">New Patients</div>
                     <div className="h2 fw-bold">3</div>
                   </div>
-                  <div style={{ fontSize: "2rem" }}>🧑‍⚕️</div>
+                  <div style={{ fontSize: "2rem" }}>🧑</div>
                 </div>
               </div>
             </div>
@@ -507,7 +525,10 @@ export default function DashboardPage() {
           <div className="row g-4 mb-4">
             <div className="col-lg-8" data-aos="fade-right">
               <div className="card h-100">
-                <div className="card-header d-flex justify-content-between align-items-center" id="appointment">
+                <div
+                  className="card-header d-flex justify-content-between align-items-center"
+                  id="appointment"
+                >
                   <h5 className="mb-0">Today's Appointments</h5>
                   <button className="btn btn-sm btn-outline-primary">
                     View All

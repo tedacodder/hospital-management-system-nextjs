@@ -4,32 +4,33 @@ import { prisma } from "@/lib/prisma";
 
 // GET all patients
 export async function GET() {
-  const patients = await prisma.patient.findMany({
-    include: { user: true },
-  });
-  return NextResponse.json(patients);
+  const patient = await prisma.user.findMany({
+  where: {role: "PATIENT" },
+});
+  return NextResponse.json(patient);
 }
+
 
 // POST new patient
 export async function POST(req: Request) {
   const body = await req.json();
-  const { full_name, email, password_hash, date_of_birth, gender } = body;
+  const { name, email, password, date_of_birth, gender } = body;
 
   try {
     // create user first
     const user = await prisma.user.create({
       data: {
-        full_name,
+        name,
         email,
-        password_hash,
-        role: "patient",
+        password,
+        role: "PATIENT",
       },
     });
 
     // create patient profile
     const patient = await prisma.patient.create({
       data: {
-        user_id: user.user_id,
+        user_id: user.id,
         date_of_birth: new Date(date_of_birth),
         gender,
       },

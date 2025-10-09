@@ -3,12 +3,22 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import Link from "next/link";
 import { useTheme } from "../context/ThemeContext";
 import { Button } from "react-bootstrap";
+import { signOut, useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+
 interface prop {
   items: { pathname: string; path: string }[];
   Role?: string;
 }
 function Navbar({ items, Role }: prop) {
   const { darkMode, toggleTheme } = useTheme();
+  const router = useRouter();
+  const { data: session } = useSession();
+
+  const handleLogout = async () => {
+    await signOut({ redirect: false });
+    router.push("/login");
+  };
 
   return (
     <>
@@ -61,6 +71,12 @@ function Navbar({ items, Role }: prop) {
               />
               <button className="btn btn-outline-success" type="submit">
                 Search
+              </button>
+              <button
+                className="p-2 btn btn-danger btn-sm"
+                onClick={handleLogout}
+              >
+                Logout
               </button>
             </form>
           </div>

@@ -19,6 +19,7 @@ function Home() {
     { pathname: "Login", path: "/login" },
     { pathname: "Signup", path: "/signup" },
   ];
+
   return (
     <>
       {/* Hero Section */}
