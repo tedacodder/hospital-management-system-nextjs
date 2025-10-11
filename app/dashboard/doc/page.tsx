@@ -1,5 +1,11 @@
 "use client";
 import { useGetAllpatientQuery } from "../../redux/api/patients";
+import {
+  useGetPatientsQuery,
+  useAddPatientMutation,
+  useGetAppointmentsQuery,
+  useAddAppointmentMutation,
+} from "../../redux/api/patientAppointmentApi";
 import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -7,15 +13,14 @@ import { Modal } from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "aos/dist/aos.css";
 import AOS from "aos";
+
 type Patient = {
   id: number;
-  patientId: string;
-  firstName: string;
-  lastName: string;
-  age: number;
-  gender: string;
-  lastVisit: string;
-  status: string;
+  name: string;
+  age?: number;
+  gender?: string;
+  lastVisit?: string;
+  status?: string;
   phone?: string;
   email?: string;
   address?: string;
@@ -24,21 +29,25 @@ type Patient = {
 
 type Appointment = {
   id: number;
-  patientId: string;
-  date: string;
+  patientId: number; // use number for consistent comparisons
+  date: string; // YYYY-MM-DD
   time: string;
   type: string;
   notes?: string;
 };
 
 export default function DashboardPage() {
-  const patient = useGetAllpatientQuery();
-  console.log(patient);
+  // queries
+  const { data: dataAll, isError: bool } = useGetAllpatientQuery(0); // used in table
+  const { data: patientsData, isLoading: loadingPatients } =
+    useGetPatientsQuery(0);
+  const [addPatient] = useAddPatientMutation();
+  const { data: appointmentsData, isLoading: loadingAppointments } =
+    useGetAppointmentsQuery(0);
+  const [addAppointment] = useAddAppointmentMutation();
+
   useEffect(() => {
-    AOS.init({
-      duration: 700,
-      once: true,
-    });
+    AOS.init({ duration: 700, once: true });
   }, []);
 
   const router = useRouter();
@@ -49,9 +58,25 @@ export default function DashboardPage() {
     router.push("/login");
   };
 
+  // time
   const [now, setNow] = useState<Date>(new Date());
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
 
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  // sidebar
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleResize = () => {
+      setSidebarOpen(window.innerWidth >= 992);
+    };
+    window.addEventListener("resize", handleResize);
+    handleResize();
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const [activeItem, setActiveItem] = useState<
     | "home"
     | "patients"
@@ -62,82 +87,12 @@ export default function DashboardPage() {
     | "schedule"
   >("home");
 
-  const [patients, setPatients] = useState<Patient[]>([
-    {
-      id: 1,
-      patientId: "P001",
-      firstName: "John",
-      lastName: "Smith",
-      age: 44,
-      gender: "Male",
-      lastVisit: "2024-04-20",
-      status: "Scheduled",
-      phone: "(555) 111-2222",
-    },
-    {
-      id: 2,
-      patientId: "P002",
-      firstName: "Emily",
-      lastName: "Johnson",
-      age: 25,
-      gender: "Female",
-      lastVisit: "2024-04-18",
-      status: "Completed",
-      phone: "(555) 222-3333",
-    },
-    {
-      id: 3,
-      patientId: "P003",
-      firstName: "Michael",
-      lastName: "Williams",
-      age: 42,
-      gender: "Male",
-      lastVisit: "2024-04-15",
-      status: "Completed",
-      phone: "(555) 333-4444",
-    },
-    {
-      id: 4,
-      patientId: "P004",
-      firstName: "Sarah",
-      lastName: "Brown",
-      age: 46,
-      gender: "Female",
-      lastVisit: "2024-04-10",
-      status: "Completed",
-      phone: "(555) 444-5555",
-    },
-    {
-      id: 5,
-      patientId: "P005",
-      firstName: "David",
-      lastName: "Miller",
-      age: 27,
-      gender: "Male",
-      lastVisit: "2024-04-05",
-      status: "Completed",
-      phone: "(555) 555-6666",
-    },
-    {
-      id: 6,
-      patientId: "P006",
-      firstName: "Emma",
-      lastName: "Davis",
-      age: 25,
-      gender: "Female",
-      lastVisit: "2024-04-02",
-      status: "Completed",
-      phone: "(555) 666-7777",
-    },
-  ]);
-
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-
-  // modal states and form states
+  // modals
   const [showPatientModal, setShowPatientModal] = useState(false);
   const [showAppointmentModal, setShowAppointmentModal] = useState(false);
   const [showPrescriptionModal, setShowPrescriptionModal] = useState(false);
 
+  // patient form
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [age, setAge] = useState<number | "">("");
@@ -147,42 +102,44 @@ export default function DashboardPage() {
   const [address, setAddress] = useState("");
   const [medicalHistory, setMedicalHistory] = useState("");
 
-  const [schedPatientId, setSchedPatientId] = useState("");
+  // schedule form
+  const [schedPatientId, setSchedPatientId] = useState<string | "">("");
   const [schedDate, setSchedDate] = useState("");
   const [schedTime, setSchedTime] = useState("");
   const [schedType, setSchedType] = useState("Regular Consultation");
   const [schedNotes, setSchedNotes] = useState("");
 
-  const [presPatientId, setPresPatientId] = useState("");
+  // prescription form
+  const [presPatientId, setPresPatientId] = useState<string | "">("");
   const [medication, setMedication] = useState("");
   const [dosage, setDosage] = useState("");
   const [frequency, setFrequency] = useState("Once daily");
   const [duration, setDuration] = useState("");
   const [instructions, setInstructions] = useState("");
 
-  // UI feedback
+  // alert
   const [alert, setAlert] = useState<{
     type: "success" | "danger";
     message: string;
   } | null>(null);
 
+  // re-init AOS when dynamic content changes
   useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(t);
-  }, []);
-
-  useEffect(() => {
-    // re-init AOS on dynamic content change
     (async () => {
       const AOS = (await import("aos")).default;
       AOS.refresh();
     })();
-  }, [patients, appointments]);
+  }, [patientsData, appointmentsData]);
 
-  // helpers
-  const nextPatientId = () => `P${String(100 + patients.length + 1).slice(1)}`;
+  // helper for patient id string generation (keeps it stable)
+  const nextPatientId = () => {
+    const count = patientsData ? patientsData.length : 0;
+    // produce P### where ### increments
+    return `P${String(100 + count + 1).slice(1)}`;
+  };
 
-  const handleAddPatient = (e?: React.FormEvent) => {
+  // Add patient handler (async)
+  const handleAddPatient = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!firstName.trim() || !lastName.trim()) {
       setAlert({
@@ -191,38 +148,42 @@ export default function DashboardPage() {
       });
       return;
     }
-    const pid = nextPatientId();
-    const newPatient: Patient = {
-      id: patients.length + 1,
-      patientId: pid,
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-      age: typeof age === "number" ? age : 0,
-      gender,
-      lastVisit: new Date().toISOString().slice(0, 10),
-      status: "Scheduled",
-      phone,
-      email,
-      address,
-      medicalHistory,
-    };
-    setPatients((p) => [newPatient, ...p]);
-    setAlert({
-      type: "success",
-      message: `Patient ${newPatient.firstName} ${newPatient.lastName} added (ID: ${pid}).`,
-    });
-    setFirstName("");
-    setLastName("");
-    setAge("");
-    setGender("");
-    setPhone("");
-    setEmail("");
-    setAddress("");
-    setMedicalHistory("");
-    setShowPatientModal(false);
+
+    try {
+      await addPatient({
+        name: `${firstName} ${lastName}`,
+        age: typeof age === "number" ? age : 0,
+        gender,
+        phone,
+        email,
+        address,
+        medicalHistory,
+        status: "Active",
+        lastVisit: new Date().toISOString().slice(0, 10),
+      }).unwrap();
+
+      setAlert({
+        type: "success",
+        message: `Patient ${firstName} ${lastName} added.`,
+      });
+
+      // reset form
+      setFirstName("");
+      setLastName("");
+      setAge("");
+      setGender("");
+      setPhone("");
+      setEmail("");
+      setAddress("");
+      setMedicalHistory("");
+      setShowPatientModal(false);
+    } catch (err) {
+      setAlert({ type: "danger", message: "Failed to add patient." });
+    }
   };
 
-  const handleSchedule = (e?: React.FormEvent) => {
+  // Schedule appointment (async)
+  const handleSchedule = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!schedPatientId || !schedDate || !schedTime) {
       setAlert({
@@ -231,24 +192,33 @@ export default function DashboardPage() {
       });
       return;
     }
-    const newAppt: Appointment = {
-      id: appointments.length + 1,
-      patientId: schedPatientId,
-      date: schedDate,
-      time: schedTime,
-      type: schedType,
-      notes: schedNotes,
-    };
-    setAppointments((a) => [newAppt, ...a]);
-    setAlert({ type: "success", message: "Appointment scheduled." });
-    setSchedPatientId("");
-    setSchedDate("");
-    setSchedTime("");
-    setSchedType("Regular Consultation");
-    setSchedNotes("");
-    setShowAppointmentModal(false);
+
+    try {
+      // convert patientId string from select to number when calling API
+      const payload = {
+        patientId: Number(schedPatientId),
+        date: schedDate,
+        time: schedTime,
+        type: schedType,
+        notes: schedNotes,
+      };
+      await addAppointment(payload as any).unwrap();
+
+      setAlert({ type: "success", message: "Appointment scheduled." });
+
+      // reset
+      setSchedPatientId("");
+      setSchedDate("");
+      setSchedTime("");
+      setSchedType("Regular Consultation");
+      setSchedNotes("");
+      setShowAppointmentModal(false);
+    } catch (err) {
+      setAlert({ type: "danger", message: "Failed to schedule appointment." });
+    }
   };
 
+  // Prescription (local demo behavior)
   const handlePrescription = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!presPatientId || !medication) {
@@ -258,7 +228,6 @@ export default function DashboardPage() {
       });
       return;
     }
-    // For demo we only keep local list (not shown). Reset and close
     setAlert({ type: "success", message: "Prescription created." });
     setPresPatientId("");
     setMedication("");
@@ -269,24 +238,21 @@ export default function DashboardPage() {
     setShowPrescriptionModal(false);
   };
 
-  // responsive: collapse sidebar on small screens
-  useEffect(() => {
-    const onResize = () => {
-      if (window.innerWidth < 992) setSidebarOpen(false);
-      else setSidebarOpen(true);
-    };
-    onResize();
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
+  // helper to get patient name safely
+  const getPatientNameById = (idInput: number | string) => {
+    if (!patientsData) return "";
+    const idNum = Number(idInput);
+    const found = patientsData.find((p) => Number(p.id) === idNum);
+    return found?.name ?? "";
+  };
+
+  const todayStr = new Date().toISOString().slice(0, 10);
 
   return (
     <div className="d-flex" style={{ minHeight: "100vh" }}>
       {/* Sidebar */}
       <aside
-        className={`position-fixed sidebar bg-white shadow-sm ${
-          sidebarOpen ? "" : "collapsed"
-        }`}
+        className={`position-fixed sidebar bg-white shadow-sm ${sidebarOpen ? "" : "collapsed"}`}
         style={{ width: 260, zIndex: 1040 }}
       >
         <div
@@ -295,6 +261,7 @@ export default function DashboardPage() {
         >
           <h5 className="mb-0">🏥 MediCare</h5>
         </div>
+
         <nav className="mt-4">
           {[
             { key: "home", icon: "bi-house-door-fill", label: "Home" },
@@ -321,7 +288,8 @@ export default function DashboardPage() {
               key={item.key}
               onClick={() => {
                 setActiveItem(item.key as any);
-                if (window.innerWidth < 992) setSidebarOpen(false);
+                if (typeof window !== "undefined" && window.innerWidth < 992)
+                  setSidebarOpen(false);
               }}
               className={`nav-item btn w-100 text-start ${
                 activeItem === item.key ? "active text-white" : "text-muted"
@@ -443,9 +411,7 @@ export default function DashboardPage() {
           {/* Alerts */}
           {alert && (
             <div
-              className={`alert alert-${
-                alert.type === "success" ? "success" : "danger"
-              } alert-dismissible`}
+              className={`alert alert-${alert.type === "success" ? "success" : "danger"} alert-dismissible`}
               role="alert"
             >
               {alert.message}
@@ -459,13 +425,15 @@ export default function DashboardPage() {
           )}
 
           {/* Stat cards */}
-          <div className="row g-4 mb-4 bg-primary" data-aos="fade-up">
+          <div className="row g-4 mb-4" data-aos="fade-up">
             <div className="col-lg-3 col-md-6 scaleup">
-              <div className="stat-card  p-3 px-2 rounded shadow-sm bg-warning text-white">
+              <div className="stat-card p-3 px-2 rounded shadow-sm bg-warning text-white">
                 <div className="d-flex align-items-center justify-content-between ">
                   <div>
                     <div className="opacity-75">Upcoming Appointments</div>
-                    <div className="h2 fw-bold">8</div>
+                    <div className="h2 fw-bold">
+                      {appointmentsData?.length ?? 0}
+                    </div>
                   </div>
                   <div style={{ fontSize: "2rem" }}>📅</div>
                 </div>
@@ -473,15 +441,13 @@ export default function DashboardPage() {
             </div>
 
             <div className="col-lg-3 col-md-6 scaleup">
-              <div
-                className="stat-card bg-danger p-3 rounded shadow-sm"
-                data-aos="fade-up"
-                data-aos-delay="80"
-              >
+              <div className="stat-card bg-danger p-3 rounded shadow-sm">
                 <div className="d-flex align-items-center justify-content-between">
                   <div>
                     <div className="opacity-75">New Patients</div>
-                    <div className="h2 fw-bold">3</div>
+                    <div className="h2 fw-bold">
+                      {patientsData ? Math.max(0, patientsData.length - 5) : 0}
+                    </div>
                   </div>
                   <div style={{ fontSize: "2rem" }}>🧑</div>
                 </div>
@@ -489,15 +455,13 @@ export default function DashboardPage() {
             </div>
 
             <div className="col-lg-3 col-md-6 scaleup">
-              <div
-                className="stat-card bg-info text-white p-3 rounded shadow-sm"
-                data-aos="fade-up"
-                data-aos-delay="160"
-              >
+              <div className="stat-card bg-info text-white p-3 rounded shadow-sm">
                 <div className="d-flex align-items-center justify-content-between">
                   <div>
                     <div className="opacity-75">Total Patients</div>
-                    <div className="h2 fw-bold">{patients.length}</div>
+                    <div className="h2 fw-bold">
+                      {patientsData?.length ?? 0}
+                    </div>
                   </div>
                   <div style={{ fontSize: "2rem" }}>👥</div>
                 </div>
@@ -505,15 +469,16 @@ export default function DashboardPage() {
             </div>
 
             <div className="col-lg-3 col-md-6 scaleup">
-              <div
-                className="stat-card bg-success p-3 rounded shadow-sm"
-                data-aos="fade-up"
-                data-aos-delay="240"
-              >
+              <div className="stat-card bg-success p-3 rounded shadow-sm">
                 <div className="d-flex align-items-center justify-content-between">
                   <div>
                     <div className="opacity-75">Appointments Today</div>
-                    <div className="h2 fw-bold">5</div>
+                    <div className="h2 fw-bold">
+                      {appointmentsData
+                        ? appointmentsData.filter((a) => a.date === todayStr)
+                            .length
+                        : 0}
+                    </div>
                   </div>
                   <div style={{ fontSize: "2rem" }}>⏰</div>
                 </div>
@@ -525,57 +490,30 @@ export default function DashboardPage() {
           <div className="row g-4 mb-4">
             <div className="col-lg-8" data-aos="fade-right">
               <div className="card h-100">
-                <div
-                  className="card-header d-flex justify-content-between align-items-center"
-                  id="appointment"
-                >
+                <div className="card-header">
                   <h5 className="mb-0">Today's Appointments</h5>
-                  <button className="btn btn-sm btn-outline-primary">
-                    View All
-                  </button>
                 </div>
-                <div className="card-body">
-                  {appointments.length === 0 ? (
-                    <div className="text-muted">No appointments scheduled.</div>
-                  ) : (
-                    appointments.map((apt) => (
+                <div className="card-body p-0">
+                  {appointmentsData
+                    ?.filter((a) => a.date === todayStr)
+                    .map((apt) => (
                       <div
                         key={apt.id}
-                        className="d-flex align-items-center justify-content-between p-3 border rounded mb-2"
+                        className="d-flex justify-content-between align-items-center p-3 border-bottom"
                       >
-                        <div className="d-flex align-items-center">
-                          <div
-                            className="rounded-circle me-3"
-                            style={{
-                              width: 8,
-                              height: 8,
-                              background:
-                                apt.type === "Emergency"
-                                  ? "#dc3545"
-                                  : "#198754",
-                            }}
-                          />
-                          <div>
-                            <div className="fw-medium">
-                              {patients.find(
-                                (p) => p.patientId === apt.patientId
-                              )?.firstName ?? ""}{" "}
-                              {patients.find(
-                                (p) => p.patientId === apt.patientId
-                              )?.lastName ?? ""}
-                            </div>
-                            <small className="text-muted">{apt.type}</small>
+                        <div>
+                          <div className="fw-medium">
+                            {getPatientNameById(apt.patientId)}
                           </div>
-                        </div>
-                        <div className="text-end">
-                          <div className="fw-medium">{apt.time}</div>
                           <small className="text-muted text-capitalize">
                             {apt.type}
                           </small>
                         </div>
+                        <div className="text-end">
+                          <div className="fw-medium">{apt.time}</div>
+                        </div>
                       </div>
-                    ))
-                  )}
+                    ))}
                 </div>
               </div>
             </div>
@@ -587,11 +525,15 @@ export default function DashboardPage() {
                 </div>
                 <div className="card-body d-flex flex-column">
                   <button
-                    className="quick-action-btn btn btn-light mb-2 text-start"
-                    onClick={() => setShowPatientModal(true)}
-                  >
-                    <i className="bi bi-person-plus me-2" /> Add Patient
-                  </button>
+    type="button"
+    className="quick-action-btn btn btn-light mb-2 text-start"
+    onClick={() => {
+      console.log("Quick Action: Add Patient clicked");
+      setShowPatientModal(true);
+    }}
+  >
+    <i className="bi bi-person-plus me-2" /> Add Patient
+  </button>
                   <button
                     className="quick-action-btn btn btn-light mb-2 text-start"
                     onClick={() => setShowAppointmentModal(true)}
@@ -630,21 +572,19 @@ export default function DashboardPage() {
                   <h5 className="mb-0">Recent Patients</h5>
                 </div>
                 <div className="card-body">
-                  {patients.map((p) => (
+                  {patientsData?.map((p) => (
                     <div
-                      key={p.patientId}
+                      key={p.id}
                       className="d-flex align-items-center justify-content-between p-3 border rounded mb-2"
                     >
                       <div>
-                        <div className="fw-medium">
-                          {p.firstName} {p.lastName}
-                        </div>
+                        <div className="fw-medium">{p.name}</div>
                         <small className="text-muted">
                           {p.medicalHistory ?? ""}
                         </small>
                       </div>
                       <div className="text-end">
-                        <small className="text-muted">{p.patientId}</small>
+                        <small className="text-muted">{p.id}</small>
                         <br />
                         <small className="text-muted">{p.lastVisit}</small>
                       </div>
@@ -730,26 +670,24 @@ export default function DashboardPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {patients.map((p) => (
-                      <tr key={p.patientId}>
-                        <td className="fw-medium">{p.patientId}</td>
-                        <td>
-                          {p.firstName} {p.lastName}
-                        </td>
-                        <td>{p.age}</td>
-                        <td>{p.phone ?? ""}</td>
-                        <td>{p.lastVisit}</td>
+                    {dataAll?.map((p: any) => (
+                      <tr key={p.id}>
+                        <td className="fw-medium">{p.id}</td>
+                        <td>{p.name}</td>
+                        <td>{p?.age}</td>
+                        <td>{p?.phone ?? ""}</td>
+                        <td>{p?.lastVisit}</td>
                         <td>
                           <span
                             className={`badge ${
                               p.status === "Active" || p.status === "Completed"
                                 ? "bg-success"
                                 : p.status === "Critical"
-                                ? "bg-danger"
-                                : "bg-secondary"
+                                  ? "bg-danger"
+                                  : "bg-secondary"
                             }`}
                           >
-                            {p.status}
+                            {p?.status}
                           </span>
                         </td>
                         <td>
@@ -847,9 +785,8 @@ export default function DashboardPage() {
             </div>
             <div className="mb-3">
               <label className="form-label">Address</label>
-              <textarea
+              <input
                 className="form-control"
-                rows={2}
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
               />
@@ -898,9 +835,9 @@ export default function DashboardPage() {
                 onChange={(e) => setSchedPatientId(e.target.value)}
               >
                 <option value="">Choose a patient</option>
-                {patients.map((p) => (
-                  <option key={p.patientId} value={p.patientId}>
-                    {p.firstName} {p.lastName} ({p.patientId})
+                {patientsData?.map((p) => (
+                  <option key={p.id} value={String(p.id)}>
+                    {p.name} ({p.id})
                   </option>
                 ))}
               </select>
@@ -985,9 +922,9 @@ export default function DashboardPage() {
                 onChange={(e) => setPresPatientId(e.target.value)}
               >
                 <option value="">Choose a patient</option>
-                {patients.map((p) => (
-                  <option key={p.patientId} value={p.patientId}>
-                    {p.firstName} {p.lastName} ({p.patientId})
+                {patientsData?.map((p) => (
+                  <option key={p.id} value={String(p.id)}>
+                    {p.name} ({p.id})
                   </option>
                 ))}
               </select>

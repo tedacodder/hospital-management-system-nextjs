@@ -14,30 +14,37 @@ export async function GET() {
 // POST new patient
 export async function POST(req: Request) {
   const body = await req.json();
-  const { name, email, password, date_of_birth, gender } = body;
+  const { name, email, password = "", gender, phone, address, age, date_of_birth } = body;
 
   try {
-    // create user first
+    const finalPassword = password || "default123";
+
+    // Create user
     const user = await prisma.user.create({
       data: {
         name,
         email,
-        password,
+        password: finalPassword,
         role: "PATIENT",
+        address,
+        phone,
+        age: String(age), // ✅ convert to string
+        gender,           // ✅ include if non-nullable
       },
     });
 
-    // create patient profile
+    // Create patient profile
     const patient = await prisma.patient.create({
       data: {
         user_id: user.id,
-        date_of_birth: new Date(date_of_birth),
+        date_of_birth: new Date(date_of_birth), // ✅ ensure valid date
         gender,
       },
     });
 
     return NextResponse.json({ user, patient }, { status: 201 });
-  } catch (err) {
-    return NextResponse.json({ error: "Failed to create patient" }, { status: 500 });
+  } catch (err: any) {
+    console.error("❌ Error creating patient:", err);
+    return NextResponse.json({ error: err.message || "Failed to create patient" }, { status: 500 });
   }
 }
