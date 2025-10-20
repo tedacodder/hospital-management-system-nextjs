@@ -45,6 +45,7 @@ export default function DashboardPage() {
   const { data: appointmentsData, isLoading: loadingAppointments } =
     useGetAppointmentsQuery(0);
   const [addAppointment] = useAddAppointmentMutation();
+  const isFetchingData = loadingPatients || loadingAppointments;
 
   useEffect(() => {
     AOS.init({ duration: 700, once: true });
@@ -281,9 +282,9 @@ export default function DashboardPage() {
               icon: "bi-capsule",
               label: "Prescriptions",
             },
-            { key: "lab", icon: "bi-test-tube", label: "Lab Results" },
-            { key: "schedule", icon: "bi-clock", label: "My Schedule" },
-          ].map((item) => (
+            { key: "lab", icon: "bi-test-tube", label: "Lab Results", },
+            { key: "schedule", icon: "bi-clock", label: "My Schedule", },
+          ].map((item) => (<a href={"#"+item.label}>
             <button
               key={item.key}
               onClick={() => {
@@ -302,7 +303,7 @@ export default function DashboardPage() {
             >
               <i className={`bi ${item.icon} me-2`}></i>
               <span>{item.label}</span>
-            </button>
+            </button></a>
           ))}
         </nav>
 
@@ -348,6 +349,31 @@ export default function DashboardPage() {
           transition: "margin 200ms",
         }}
       >
+        {isFetchingData && (
+  <div
+    style={{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+      background: "rgba(255,255,255,0.8)",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      zIndex: 2000,
+      fontSize: "1.5rem",
+      color: "#5D5CDE",
+      fontWeight: "bold",
+    }}
+  >
+    <div className="spinner-border text-primary me-3" role="status">
+      <span className="visually-hidden">Loading...</span>
+    </div>
+    Fetching latest data...
+  </div>
+)}
+
         <header className="bg-white border-bottom shadow-sm">
           <div className="d-flex align-items-center justify-content-between p-3">
             <div className="d-flex align-items-center">
@@ -357,7 +383,7 @@ export default function DashboardPage() {
               >
                 <i className="bi bi-list"></i>
               </button>
-              <h4 className="mb-0">
+              <h4 className="mb-0" id ="Home">
                 {activeItem === "home"
                   ? "Dashboard"
                   : activeItem.charAt(0).toUpperCase() + activeItem.slice(1)}
@@ -491,7 +517,7 @@ export default function DashboardPage() {
             <div className="col-lg-8" data-aos="fade-right">
               <div className="card h-100">
                 <div className="card-header">
-                  <h5 className="mb-0">Today's Appointments</h5>
+                  <h5 className="mb-0" id="Appointments">Today's Appointments</h5>
                 </div>
                 <div className="card-body p-0">
                   {appointmentsData
@@ -525,15 +551,15 @@ export default function DashboardPage() {
                 </div>
                 <div className="card-body d-flex flex-column">
                   <button
-    type="button"
-    className="quick-action-btn btn btn-light mb-2 text-start"
-    onClick={() => {
-      console.log("Quick Action: Add Patient clicked");
-      setShowPatientModal(true);
-    }}
-  >
-    <i className="bi bi-person-plus me-2" /> Add Patient
-  </button>
+                    type="button"
+                    className="quick-action-btn btn btn-light mb-2 text-start"
+                    onClick={() => {
+                      console.log("Quick Action: Add Patient clicked");
+                      setShowPatientModal(true);
+                    }}
+                  >
+                    <i className="bi bi-person-plus me-2" /> Add Patient
+                  </button>
                   <button
                     className="quick-action-btn btn btn-light mb-2 text-start"
                     onClick={() => setShowAppointmentModal(true)}
@@ -630,7 +656,7 @@ export default function DashboardPage() {
           {/* Patient Management */}
           <div className="card mt-4" data-aos="fade-up">
             <div className="card-header d-flex justify-content-between align-items-center">
-              <h5 className="mb-0">Patient Management</h5>
+              <h5 className="mb-0" id="Patients">Patient Management</h5>
               <button
                 className="btn btn-primary"
                 onClick={() => setShowPatientModal(true)}

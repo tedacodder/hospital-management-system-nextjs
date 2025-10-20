@@ -7,6 +7,6 @@ const PatientNav = () => {
     { pathname: "Emergency", path: "/emergency" },
     { pathname: "About", path: "/about" },
   ];
-  return <Navbar items={element}></Navbar>;
+  return <Navbar items={element}><h1>here</h1></Navbar>;
 };
 export default PatientNav;

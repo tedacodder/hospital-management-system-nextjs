@@ -1,6 +1,6 @@
 import {createApi,fetchBaseQuery} from "@reduxjs/toolkit/query/react"
 export const patient=createApi({
-    reducerPath:"",
+    reducerPath:"patient",
     baseQuery: fetchBaseQuery({baseUrl:"/api/"}),
     endpoints:(builder)=>({
         getAllpatient:builder.query({
@@ -9,6 +9,8 @@ export const patient=createApi({
         getpatientById:builder.query({
             query:(id)=>`patient/${id}`
         })
+        ,
+        
 
     })
 

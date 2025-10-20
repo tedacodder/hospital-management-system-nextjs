@@ -14,8 +14,14 @@ export async function GET() {
 // POST new patient
 export async function POST(req: Request) {
   const body = await req.json();
-  const { name, email, password = "", gender, phone, address, age, date_of_birth } = body;
+  const { name, email, password = "", gender, phone, address, age } = body;
+  const existingUser = await prisma.user.findUnique({
+  where: { email },
+});
 
+if (existingUser) {
+  throw new Error("Email already exists");
+}
   try {
     const finalPassword = password || "default123";
 
@@ -28,19 +34,20 @@ export async function POST(req: Request) {
         role: "PATIENT",
         address,
         phone,
-        age: String(age), // ✅ convert to string
-        gender,           // ✅ include if non-nullable
+        age: String(age), // convert to string
+        gender,           
       },
     });
 
+
     // Create patient profile
     const patient = await prisma.patient.create({
-      data: {
-        user_id: user.id,
-        date_of_birth: new Date(date_of_birth), // ✅ ensure valid date
-        gender,
-      },
-    });
+  data: {
+    user: { connect: { id: user.id } },
+    // include any patient-specific fields here
+  },
+});
+
 
     return NextResponse.json({ user, patient }, { status: 201 });
   } catch (err: any) {

@@ -27,6 +27,7 @@ const Userdashboard = () => {
   const { appointments, loading: apptsLoading, error: apptsError } = useSelector(
     (state: RootState) => state.appointments
   );
+  const isFetchingData =  status === "loading"||userLoading || apptsLoading;
 
   useEffect(() => {
     if (session?.user?.email) {
@@ -35,7 +36,7 @@ const Userdashboard = () => {
     }
   }, [session?.user?.email, dispatch]);
 
-  if (status === "loading") return <div>Loading session...</div>;
+  
   if (!session) {
     return (
       <div className="text-center mt-5">
@@ -49,6 +50,30 @@ const Userdashboard = () => {
 
   return (
     <div>
+       {isFetchingData && (
+  <div
+    style={{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+      background: "rgba(255,255,255,0.8)",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      zIndex: 2000,
+      fontSize: "1.5rem",
+      color: "#5D5CDE",
+      fontWeight: "bold",
+    }}
+  >
+    <div className="spinner-border text-primary me-3" role="status">
+      <span className="visually-hidden">Loading...</span>
+    </div>
+    Loading your data...
+  </div>
+)}
       <PatientNav />
       <div className="container mt-5">
         {/* Patient Info */}
@@ -100,13 +125,13 @@ const Userdashboard = () => {
           <div className="col-md-4">
             <div className="card shadow-sm p-3 bg-light">
               <h5>Pending Bills</h5>
-              <p className="display-6">2500 birr</p>
+              <p className="display-6">0 birr</p>
             </div>
           </div>
           <div className="col-md-4">
             <div className="card shadow-sm p-3 bg-light">
               <h5>Prescriptions</h5>
-              <p className="display-6">5</p>
+              <p className="display-6">0</p>
             </div>
           </div>
         </div>

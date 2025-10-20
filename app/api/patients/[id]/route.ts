@@ -1,3 +1,4 @@
+// app/api/patients/[id]
 import {NextRequest , NextResponse} from "next/server"
 import { prisma } from "@/lib/prisma";
 interface props{
