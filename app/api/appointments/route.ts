@@ -1,140 +1,144 @@
-// app/api/appointments/route.ts
-import { NextResponse } from "next/server";
+import { AppointmentStatus, NotificationType, Prisma, Role } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { buildMeta, created, ok, parseBody, parseQuery, route, HttpError } from "@/lib/api";
+import {
+  isStaff,
+  requireOwnPatient,
+  requireSession,
+  type AuthedSession,
+} from "@/lib/auth";
+import { appointmentQuerySchema, createAppointmentSchema } from "@/lib/validation";
+import { recordAudit } from "@/lib/audit";
+import { notify } from "@/lib/notify";
+import { assertSlotIsBookable } from "@/lib/scheduling";
 
-export async function POST(req: Request) {
+const INCLUDE = {
+  patient: { select: { id: true, mrn: true, user: { select: { id: true, name: true, email: true, phone: true } } } },
+  doctor: { select: { id: true, specialization: true, user: { select: { id: true, name: true } } } },
+} satisfies Prisma.AppointmentInclude;
+
+/// Scopes a query to what the caller is allowed to see. Patients see only their
+/// own appointments; doctors see only their own schedule; staff see everything.
+async function scopeFor(session: AuthedSession): Promise<Prisma.AppointmentWhereInput> {
+  if (isStaff(session.user.role)) return {};
+
+  if (session.user.role === Role.DOCTOR) {
+    const doctor = await prisma.doctor.findUnique({
+      where: { userId: session.user.id },
+      select: { id: true },
+    });
+    return { doctorId: doctor?.id ?? -1 };
+  }
+
+  const patient = await prisma.patient.findUnique({
+    where: { userId: session.user.id },
+    select: { id: true },
+  });
+  return { patientId: patient?.id ?? -1 };
+}
+
+/// The previous handler took an `email` query parameter and returned that
+/// person's appointments to anyone who asked — or the entire appointment table
+/// when the parameter was omitted. Scope is now derived from the session.
+export const GET = route(async (req: Request) => {
+  const session = await requireSession();
+  const { page, pageSize, status, doctorId, patientId, from, to, order } =
+    parseQuery(req, appointmentQuerySchema);
+
+  const scope = await scopeFor(session);
+  const where: Prisma.AppointmentWhereInput = {
+    ...scope,
+    ...(status ? { status } : {}),
+    // Explicit filters may only narrow the scope, never widen it.
+    ...(doctorId && isStaff(session.user.role) ? { doctorId } : {}),
+    ...(patientId && isStaff(session.user.role) ? { patientId } : {}),
+    ...(from || to
+      ? { date: { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) } }
+      : {}),
+  };
+
+  const [appointments, total] = await Promise.all([
+    prisma.appointment.findMany({
+      where,
+      include: INCLUDE,
+      orderBy: { date: order },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.appointment.count({ where }),
+  ]);
+
+  return ok(appointments, { meta: buildMeta(page, pageSize, total) });
+});
+
+/// Books an appointment.
+///
+/// The previous handler accepted a name and email from an unauthenticated
+/// request and silently created a User with the plaintext password
+/// "default_password" — an open account-creation endpoint. Booking now requires
+/// a session and an existing patient record.
+export const POST = route(async (req: Request) => {
+  const session = await requireSession();
+  const input = await parseBody(req, createAppointmentSchema);
+
+  let patientId: number;
+  if (isStaff(session.user.role)) {
+    if (!input.patientId) throw new HttpError(400, "Select a patient");
+    patientId = input.patientId;
+  } else if (session.user.role === Role.PATIENT) {
+    const own = await requireOwnPatient(session);
+    patientId = own.id;
+  } else {
+    throw new HttpError(403, "Doctors cannot book appointments for themselves");
+  }
+
+  if (input.doctorId) {
+    await assertSlotIsBookable(input.doctorId, input.date, input.durationMinutes);
+  }
+
+  let appointment;
   try {
-    const body = await req.json();
-    const {
-      name,
-      age,
-      gender,
-      contact,
-      email,
-      date,
-      department,
-      doctor, // doctor name (optional)
-      reason,
-      status = "PENDING", // default status
-    } = body;
-
-    if (!email || !date || !department || !reason) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      );
-    }
-
-    // Normalize email
-    const normalizedEmail = email.toLowerCase();
-
-    // Find or create user
-    let user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
-    if (!user) {
-      user = await prisma.user.create({
-        data: {
-          name,
-          email: normalizedEmail,
-          password: "default_password",
-          phone: contact ?? "",
-          age: age ?? "",
-          gender: gender ?? "",
-        },
-      });
-
-      // create patient record for new user
-      await prisma.patient.create({ data: { userId: user.id } });
-    } else {
-      // If user exists but no patient? create patient
-      const existingPatient = await prisma.patient.findUnique({ where: { userId: user.id } });
-      if (!existingPatient) {
-        await prisma.patient.create({ data: { userId: user.id } });
-      }
-    }
-
-    // Find patient (should exist now)
-    const patient = await prisma.patient.findUnique({ where: { userId: user.id } });
-    if (!patient) {
-      return NextResponse.json({ error: "Patient record not found" }, { status: 404 });
-    }
-
-    // Find doctor by user.name or leave null
-    let doctorRecord = null;
-    if (doctor) {
-      doctorRecord = await prisma.doctor.findFirst({
-        where: { user: { name: doctor } },
-      });
-    }
-
-    // Create appointment with status
-    const appointment = await prisma.appointment.create({
+    appointment = await prisma.appointment.create({
       data: {
-        date: new Date(date),
-        reason,
-        department,
-        status, // 👈 include status here
-        patientId: patient.id,
-        doctorId: doctorRecord ? doctorRecord.id : null,
+        patientId,
+        doctorId: input.doctorId ?? null,
+        department: input.department,
+        date: input.date,
+        durationMinutes: input.durationMinutes,
+        reason: input.reason,
+        notes: input.notes || null,
+        status: AppointmentStatus.PENDING,
       },
+      include: INCLUDE,
     });
-
-    // Return created appointment with related user info
-    const full = await prisma.appointment.findUnique({
-      where: { id: appointment.id },
-      include: {
-        patient: { include: { user: true } },
-        doctor: { include: { user: true } },
-      },
-    });
-
-    return NextResponse.json({ message: "Appointment created", appointment: full }, { status: 201 });
-  } catch (err: any) {
-    console.error("Error creating appointment:", err);
-    return NextResponse.json({ error: err.message || "Server error" }, { status: 500 });
+  } catch (err) {
+    // The (doctorId, date) unique index is the last line of defence against two
+    // concurrent requests passing the availability check simultaneously.
+    if (
+      err instanceof Prisma.PrismaClientKnownRequestError &&
+      err.code === "P2002"
+    ) {
+      throw new HttpError(409, "That time slot was just taken. Pick another.");
+    }
+    throw err;
   }
-}
 
-export async function GET(req: Request) {
-  try {
-    const url = new URL(req.url);
-    const email = url.searchParams.get("email");
+  await recordAudit({
+    actorId: session.user.id,
+    action: "appointment.created",
+    entity: "Appointment",
+    entityId: appointment.id,
+  });
 
-    if (!email) {
-      // if email not provided, return all appointments (admin)
-      const all = await prisma.appointment.findMany({
-        include: { patient: { include: { user: true } }, doctor: { include: { user: true } } },
-        orderBy: { date: "desc" },
-      });
-      return NextResponse.json(all);
-    }
-
-    const normalizedEmail = email.toLowerCase();
-
-    // Find user by email
-    const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
-    // Find patient
-    const patient = await prisma.patient.findUnique({ where: { userId: user.id } });
-    if (!patient) {
-      return NextResponse.json({ error: "Patient not found" }, { status: 404 });
-    }
-
-    // Find appointments for this patient
-    const appointments = await prisma.appointment.findMany({
-      where: { patientId: patient.id },
-      include: {
-        doctor: { include: { user: true } },
-        patient: { include: { user: true } },
-      },
-      orderBy: { date: "desc" },
+  if (appointment.doctor?.user.id) {
+    await notify({
+      userId: appointment.doctor.user.id,
+      type: NotificationType.APPOINTMENT,
+      title: "New appointment request",
+      body: `${appointment.patient.user.name ?? "A patient"} requested ${appointment.date.toLocaleString()}.`,
+      link: `/dashboard/doc`,
     });
-
-    return NextResponse.json({ appointments }, { status: 200 });
-  } catch (err: any) {
-    console.error("Error fetching appointments:", err);
-    return NextResponse.json({ error: err.message || "Server error" }, { status: 500 });
   }
-}
+
+  return created(appointment);
+});

@@ -1,13 +1,143 @@
-/* globals.css */
+@import "tailwindcss";
 
-/* Light mode */
-html, body , main{
-  margin:0;
-  padding:0;
+/* ───────────────────────────── Design tokens ─────────────────────────────
+ *
+ * Direction: a clinical records interface, not a marketing site. The reference
+ * points are lab requisition forms and anaesthetic charts — dense, legible,
+ * unexcitable. Colour carries clinical meaning only; nothing is tinted for
+ * decoration, so when something turns amber or red it means something.
+ *
+ * Deliberately avoided: cream-and-terracotta, gradient washes, a single
+ * border-radius on every surface, and drop shadows used as hierarchy.
+ * Hierarchy here comes from rules, weight and spacing.
+ */
+
+@theme {
+  /* Ink — deep petrol rather than tinted black, so text on white reads warm
+     under the fluorescent lighting these screens actually live under. */
+  --color-ink-900: #0d1f26;
+  --color-ink-700: #24424c;
+  --color-ink-500: #5b7782;
+  --color-ink-300: #9fb2ba;
+
+  /* Paper and rules */
+  --color-paper: #f7f9f9;
+  --color-surface: #ffffff;
+  --color-rule: #dde5e7;
+  --color-rule-strong: #c2d0d4;
+
+  /* One accent, used for interactive elements only — never as decoration. */
+  --color-accent-700: #0f5c55;
+  --color-accent-600: #14766d;
+  --color-accent-500: #1a9187;
+  --color-accent-050: #e8f3f1;
+
+  /* Clinical signal colours. These map to status, never to mood. */
+  --color-signal-ok: #1f7a43;
+  --color-signal-ok-bg: #e7f3ec;
+  --color-signal-wait: #8a5a06;
+  --color-signal-wait-bg: #fbf1de;
+  --color-signal-stop: #a32020;
+  --color-signal-stop-bg: #fbeaea;
+  --color-signal-info: #1e5aa8;
+  --color-signal-info-bg: #e8f0fa;
+
+  /* Type. IBM Plex is an engineering family with unambiguous digits and a
+     true mono companion — MRNs, dosages and amounts are set in the mono so a
+     transposed digit is visible at a glance. */
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.9375rem;
+  --text-lg: 1.0625rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.75rem;
+  --text-3xl: 2.25rem;
+
+  --radius-sm: 3px;
+  --radius-md: 5px;
+  --radius-lg: 8px;
 }
- .scaleup{
-  transition:transform 0.3s ease;
- }
- .scaleup:hover{
-  transform:scale(1.2);
- }
+
+/* ───────────────────────────── Base ───────────────────────────── */
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-paper);
+  color: var(--color-ink-900);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Lining, tabular figures everywhere. In a clinical table, columns of numbers
+   that do not align are a legibility hazard. */
+table,
+[data-numeric],
+.font-mono {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+h1, h2, h3, h4 {
+  line-height: 1.25;
+  font-weight: 600;
+  letter-spacing: -0.006em;
+}
+
+/* Keyboard focus must always be visible — staff work these screens by tab. */
+:focus-visible {
+  outline: 2px solid var(--color-accent-600);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+::selection {
+  background: var(--color-accent-050);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ───────────────────────────── Print ─────────────────────────────
+ * Prescriptions, invoices and patient summaries are printed and filed. Chrome
+ * is dropped and the page is set on white at a readable serif-free size.
+ */
+
+@media print {
+  body {
+    background: #fff;
+    font-size: 11pt;
+  }
+
+  [data-print="hide"],
+  nav,
+  aside {
+    display: none !important;
+  }
+
+  [data-print="page"] {
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+    border: 0;
+  }
+
+  a[href]::after {
+    content: "";
+  }
+}

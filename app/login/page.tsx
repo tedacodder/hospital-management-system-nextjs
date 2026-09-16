@@ -1,69 +1,95 @@
 "use client";
-  
+
+import { useState, type FormEvent } from "react";
+import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import Navbar from "../components/Navbar";
+import { Button } from "@/components/ui/Button";
+import { TextField } from "@/components/ui/Field";
+
 export default function LoginPage() {
-  
-    
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    const res = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
+    setError(null);
+    setLoading(true);
 
-    if (res?.ok) {
-      const sessionRes = await fetch("/api/auth/session");
-      const session = await sessionRes.json();
-      const role = session?.user?.role;
+    const res = await signIn("credentials", { email, password, redirect: false });
 
-      if (role === "DOCTOR") router.push("/dashboard/doc");
-      else if (role === "ADMIN") router.push("/dashboard/admin");
-      else router.push("/dashboard/user");
+    if (!res || !res.ok) {
+      setLoading(false);
+      // NextAuth v4 surfaces a thrown authorize() error's message here; an
+      // authorize() that returns null (bad credentials) instead comes back as
+      // the generic string "CredentialsSignin", which we don't show verbatim.
+      setError(
+        res?.error && res.error !== "CredentialsSignin" ? res.error : "Incorrect email or password.",
+      );
+      return;
     }
-  };
 
-  const element = [
-    { pathname: "Home", path: "/" },
-    { pathname: "Login", path: "/login" },
-    { pathname: "Signup", path: "/signup" },
-  ];
+    // The role lives in the session, not in the sign-in response, so it's
+    // fetched once here to route to the right dashboard.
+    const session = await fetch("/api/auth/session").then((r) => r.json());
+    const role = session?.user?.role;
+    router.push(
+      role === "ADMIN" || role === "STAFF"
+        ? "/dashboard/admin"
+        : role === "DOCTOR"
+          ? "/dashboard/doc"
+          : "/dashboard/user",
+    );
+    router.refresh();
+  }
+
   return (
-    <>
-      <Navbar items={element} />
-      <div className="container d-flex justify-content-center align-items-center vh-100">
-        <form
-          onSubmit={handleSubmit}
-          className="card p-4 shadow-lg"
-          style={{ width: "350px" }}
-        >
-          <h2 className="mb-3 text-center">Login</h2>
-          <input
+    <main className="flex min-h-screen items-center justify-center bg-paper px-4">
+      <div className="w-full max-w-sm">
+        <div className="mb-8 text-center">
+          <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-md bg-accent-700 text-sm font-bold text-white">
+            M+
+          </div>
+          <h1 className="text-xl font-semibold text-ink-900">Sign in to MediCare+</h1>
+        </div>
+
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4 rounded-lg border border-rule bg-surface p-6">
+          {error && (
+            <p className="rounded-md bg-[var(--color-signal-stop-bg)] px-3 py-2 text-sm text-[var(--color-signal-stop)]">
+              {error}
+            </p>
+          )}
+          <TextField
+            label="Email"
             type="email"
-            className="form-control mb-2"
-            placeholder="Email"
+            autoComplete="email"
+            required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            required
           />
-          <input
+          <TextField
+            label="Password"
             type="password"
-            className="form-control mb-3"
-            placeholder="Password"
+            autoComplete="current-password"
+            required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            required
           />
-          <button className="btn btn-success w-100">Login</button>
+          <Button type="submit" loading={loading} className="mt-1 w-full">
+            Sign in
+          </Button>
         </form>
+
+        <p className="mt-5 text-center text-sm text-ink-500">
+          New patient?{" "}
+          <Link href="/signup" className="font-medium text-accent-700 hover:underline">
+            Create an account
+          </Link>
+        </p>
       </div>
-    </>
+    </main>
   );
 }

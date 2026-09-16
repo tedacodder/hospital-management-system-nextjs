@@ -1,21 +1,27 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { buildMeta, ok, parseQuery, route } from "@/lib/api";
+import { requireSession } from "@/lib/auth";
+import { paginationSchema } from "@/lib/validation";
 
-export async function GET() {
-  const notifications = await prisma.notification.findMany();
-  return NextResponse.json(notifications);
-}
+// The previous handler returned every notification for every user to anonymous
+// callers, and referenced a model that did not exist.
 
-export async function POST(req: Request) {
-  const body = await req.json();
-  const { user_id, message } = body;
+/// The signed-in user's own notifications, plus an unread count for the badge.
+export const GET = route(async (req: Request) => {
+  const session = await requireSession();
+  const { page, pageSize } = parseQuery(req, paginationSchema);
+  const where = { userId: session.user.id };
 
-  try {
-    const notification = await prisma.notification.create({
-      data: { user_id, message },
-    });
-    return NextResponse.json(notification, { status: 201 });
-  } catch {
-    return NextResponse.json({ error: "Failed to create notification" }, { status: 500 });
-  }
-}
+  const [notifications, total, unread] = await Promise.all([
+    prisma.notification.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.notification.count({ where }),
+    prisma.notification.count({ where: { ...where, isRead: false } }),
+  ]);
+
+  return ok({ notifications, unread }, { meta: buildMeta(page, pageSize, total) });
+});
