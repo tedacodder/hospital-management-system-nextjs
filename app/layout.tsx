@@ -1,32 +1,18 @@
-"use client";
-import { ReactNode } from "react";
-import { ThemeProvider } from "./context/ThemeContext";
-import { SessionProvider } from "next-auth/react";
-import { Provider } from "react-redux";
-import { store } from "./redux/store";
-import "bootstrap/dist/css/bootstrap.min.css";
+import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import "./globals.css";
+import { Providers } from "./providers";
+
+export const metadata: Metadata = {
+  title: "MediCare+ Hospital Management System",
+  description: "Patient, doctor and administrative management for clinics and hospitals.",
+};
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <head>
-        <title>Medicare</title>
-      </head>
-      <body>
-        <ThemeProvider>
-          <main className="">
-            <SessionProvider>
-              <Provider store={store}>{children}</Provider>
-            </SessionProvider>
-          </main>
-          <footer className="bg-primary text-white text-center p-4 ">
-            <p>
-              &copy; {new Date().getFullYear()} MediCare+ Hospital Management
-              System. All rights reserved.
-            </p>
-          </footer>
-        </ThemeProvider>
+      <body className="min-h-screen bg-paper font-sans text-ink-900 antialiased">
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

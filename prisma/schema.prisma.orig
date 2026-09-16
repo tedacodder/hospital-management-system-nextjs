@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Base User
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String?
+  email     String   @unique
+  password  String
+  role      Role     @default(PATIENT)
+  createdAt DateTime @default(now())
+  phone     String   @default("")
+  address   String   @default("")
+  age       String   @default("")
+  gender    String   @default("")
+
+  // Relations
+  patient Patient?
+  doctor  Doctor?
+}
+
+// Role Enum
+enum Role {
+  PATIENT
+  DOCTOR
+  ADMIN
+}
+
+// Patients
+model Patient {
+  id             Int             @id @default(autoincrement())
+  userId         Int             @unique
+  user           User            @relation(fields: [userId], references: [id])
+  medicalRecords MedicalRecord[]
+  appointments   Appointment[]
+}
+
+// Doctors
+model Doctor {
+  id             Int           @id @default(autoincrement())
+  userId         Int           @unique
+  user           User          @relation(fields: [userId], references: [id])
+  specialization String
+  appointments   Appointment[]
+}
+
+// Appointments
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+model Appointment {
+  id         Int               @id @default(autoincrement())
+  date       DateTime
+  reason     String
+  department String
+  status     AppointmentStatus @default(PENDING)
+  patientId  Int
+  doctorId   Int?
+  patient    Patient           @relation(fields: [patientId], references: [id])
+  doctor     Doctor?           @relation(fields: [doctorId], references: [id])
+  createdAt  DateTime          @default(now())
+}
+
+
+// Medical Records
+model MedicalRecord {
+  id        Int      @id @default(autoincrement())
+  details   String
+  createdAt DateTime @default(now())
+  patientId Int
+  patient   Patient  @relation(fields: [patientId], references: [id])
+}
