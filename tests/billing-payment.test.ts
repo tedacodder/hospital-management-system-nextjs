@@ -2,6 +2,19 @@ import { describe, expect, it, vi } from "vitest";
 import { Prisma } from "@prisma/client";
 import { recordPayment } from "@/lib/billing";
 
+type Tx = Parameters<typeof recordPayment>[0];
+
+// The mocks below intentionally implement only the invoice/payment methods
+// recordPayment() actually calls, not the full Prisma.TransactionClient
+// surface — that's the point of a unit-level mock. `as Tx` on its own is
+// TS2352: the mock's shape and the real transaction-client type don't
+// "sufficiently overlap" for a direct assertion. Route through `unknown` at
+// this single, explicit boundary rather than fleshing out (or weakening)
+// the real type just to satisfy the compiler.
+function asTx(t: object): Tx {
+  return t as unknown as Tx;
+}
+
 // recordPayment builds its own `new Prisma.Decimal(...)` internally, which
 // under Vitest resolves to the test shim in tests/mocks/prisma-client.ts (see
 // vitest.config.ts). These tests use that same class for invoice.total and
@@ -27,27 +40,27 @@ describe("recordPayment", () => {
   it("throws 404 when the invoice does not exist", async () => {
     const t = { invoice: { findUnique: vi.fn().mockResolvedValue(null) }, payment: {} };
     await expect(
-      recordPayment(t as Parameters<typeof recordPayment>[0], { invoiceId: 1, amount: 10, method: "CASH" }),
+      recordPayment(asTx(t), { invoiceId: 1, amount: 10, method: "CASH" }),
     ).rejects.toMatchObject({ status: 404 });
   });
 
   it("throws 409 on a cancelled invoice", async () => {
     const t = tx({ status: "CANCELLED", total: 100, paid: [] });
     await expect(
-      recordPayment(t as Parameters<typeof recordPayment>[0], { invoiceId: 1, amount: 10, method: "CASH" }),
+      recordPayment(asTx(t), { invoiceId: 1, amount: 10, method: "CASH" }),
     ).rejects.toMatchObject({ status: 409 });
   });
 
   it("rejects a payment larger than the outstanding balance", async () => {
     const t = tx({ status: "PENDING", total: 100, paid: [40] });
     await expect(
-      recordPayment(t as Parameters<typeof recordPayment>[0], { invoiceId: 1, amount: 61, method: "CASH" }),
+      recordPayment(asTx(t), { invoiceId: 1, amount: 61, method: "CASH" }),
     ).rejects.toMatchObject({ status: 422 });
   });
 
   it("accepts a payment exactly matching the outstanding balance", async () => {
     const t = tx({ status: "PENDING", total: 100, paid: [40] });
-    const payment = await recordPayment(t as Parameters<typeof recordPayment>[0], { invoiceId: 1, amount: 60, method: "CASH" });
+    const payment = await recordPayment(asTx(t), { invoiceId: 1, amount: 60, method: "CASH" });
     expect(payment).toBeTruthy();
     expect(t.invoice.update).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ status: "PAID" }) }),
@@ -56,7 +69,7 @@ describe("recordPayment", () => {
 
   it("leaves the invoice PENDING when the payment only partially covers it", async () => {
     const t = tx({ status: "PENDING", total: 100, paid: [] });
-    await recordPayment(t as Parameters<typeof recordPayment>[0], { invoiceId: 1, amount: 30, method: "CASH" });
+    await recordPayment(asTx(t), { invoiceId: 1, amount: 30, method: "CASH" });
     expect(t.invoice.update).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ status: "PENDING" }) }),
     );
@@ -64,7 +77,7 @@ describe("recordPayment", () => {
 
   it("defaults reference to null rather than an empty string", async () => {
     const t = tx({ status: "PENDING", total: 100, paid: [] });
-    await recordPayment(t as Parameters<typeof recordPayment>[0], { invoiceId: 1, amount: 10, method: "CASH", reference: "" });
+    await recordPayment(asTx(t), { invoiceId: 1, amount: 10, method: "CASH", reference: "" });
     expect(t.payment.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ reference: null }) }),
     );
