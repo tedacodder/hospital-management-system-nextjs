@@ -25,12 +25,21 @@
   --color-surface: #ffffff;
   --color-rule: #dde5e7;
   --color-rule-strong: #c2d0d4;
+  /* Border for form controls. rule-strong is a decorative divider colour and
+     is too faint to identify an input; this one clears 3:1 against white. */
+  --color-control: #7c939c;
 
   /* One accent, used for interactive elements only — never as decoration. */
   --color-accent-700: #0f5c55;
   --color-accent-600: #14766d;
   --color-accent-500: #1a9187;
   --color-accent-050: #e8f3f1;
+  /* Accent for use on the dark ink surfaces (brand panel, security, final CTA)
+     only. accent-500/600 do not have enough contrast against ink-900. */
+  --color-accent-400: #47b8ac;
+
+  /* One step up from ink-900, for layered surfaces on the dark panels. */
+  --color-ink-800: #15303a;
 
   /* Clinical signal colours. These map to status, never to mood. */
   --color-signal-ok: #1f7a43;
@@ -45,8 +54,8 @@
   /* Type. IBM Plex is an engineering family with unambiguous digits and a
      true mono companion — MRNs, dosages and amounts are set in the mono so a
      transposed digit is visible at a glance. */
-  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-sans: var(--font-plex-sans), "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
 
   --text-xs: 0.75rem;
   --text-sm: 0.8125rem;
@@ -59,6 +68,15 @@
   --radius-sm: 3px;
   --radius-md: 5px;
   --radius-lg: 8px;
+  /* Large frames only (hero board, auth card). Everything else stays on the
+     small scale above so the interface keeps its precise, unrounded feel. */
+  --radius-xl: 12px;
+
+  /* Elevation is reserved for things that genuinely sit above the page:
+     the illustrative product cards on the landing page and the auth card. */
+  --shadow-float: 0 1px 2px rgb(13 31 38 / 0.06), 0 8px 24px -6px rgb(13 31 38 / 0.12),
+    0 24px 48px -12px rgb(13 31 38 / 0.14);
+  --shadow-card: 0 1px 2px rgb(13 31 38 / 0.05), 0 4px 16px -4px rgb(13 31 38 / 0.08);
 }
 
 /* ───────────────────────────── Base ───────────────────────────── */
@@ -95,7 +113,6 @@ h1, h2, h3, h4 {
 :focus-visible {
   outline: 2px solid var(--color-accent-600);
   outline-offset: 2px;
-  border-radius: var(--radius-sm);
 }
 
 ::selection {
@@ -111,6 +128,162 @@ h1, h2, h3, h4 {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* ───────────────────────────── Landing & auth surfaces ─────────────────────────────
+ * Everything below is used only by the landing page and the sign-in / sign-up
+ * pages. Motion is CSS-only and short; the reduced-motion rule above collapses
+ * all of it to an instant final state.
+ */
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* A few pixels of drift, nothing more — it should read as "alive", not "moving". */
+@keyframes drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -6px, 0);
+  }
+}
+
+@keyframes status-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgb(31 122 67 / 0.4);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 6px rgb(31 122 67 / 0);
+  }
+}
+
+@keyframes tick-in {
+  from {
+    stroke-dashoffset: 24;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Staged entrance. Set --d (see components/brand/motion.ts) for the delay. */
+.animate-rise {
+  animation: rise 640ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+
+/* Applied to the root of each landing/auth route so client-side navigation
+   between them (landing → sign in → sign up) fades in instead of snapping. */
+.page-enter {
+  animation: page-in 260ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.animate-float {
+  animation: drift 9s ease-in-out infinite;
+  animation-delay: var(--d, 0ms);
+}
+
+.status-pulse {
+  animation: status-pulse 2.4s ease-out infinite;
+}
+
+.tick-in {
+  stroke-dasharray: 24;
+  animation: tick-in 420ms 80ms ease-out both;
+}
+
+/* Scroll-linked reveal, as progressive enhancement only: browsers without
+   animation-timeline simply show the content, so nothing is ever hidden. */
+@supports (animation-timeline: view()) {
+  .reveal {
+    animation: rise linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 35%;
+  }
+}
+
+/* Scroll-linked animation ignores animation-duration, so the blanket rule in
+   the reduced-motion block above cannot stop it — switch it off explicitly. */
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    animation: none;
+  }
+}
+
+/* Fine measurement grid, faded out toward the edges. It is the same idea as
+   the ruled lines on a paper chart, which keeps it on-brand rather than
+   decorative. */
+.bg-grid {
+  background-image:
+    linear-gradient(to right, rgb(13 31 38 / 0.055) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(13 31 38 / 0.055) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 30%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 30%, transparent 100%);
+}
+
+.bg-grid-dark {
+  background-image:
+    linear-gradient(to right, rgb(255 255 255 / 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(255 255 255 / 0.06) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(ellipse 80% 70% at 30% 20%, #000 20%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 70% at 30% 20%, #000 20%, transparent 100%);
+}
+
+/* One soft ambient light per surface. Deliberately a single, low-opacity wash. */
+.glow-accent {
+  background: radial-gradient(closest-side, rgb(26 145 135 / 0.16), transparent);
+}
+
+.glow-accent-dark {
+  background: radial-gradient(closest-side, rgb(71 184 172 / 0.22), transparent);
+}
+
+/* Skip link — first focusable element on the landing page. */
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -4rem;
+  z-index: 100;
+  border-radius: var(--radius-md);
+  background: var(--color-ink-900);
+  padding: 0.5rem 0.875rem;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: #fff;
+  transition: top 150ms ease;
+}
+
+.skip-link:focus {
+  top: 1rem;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 5rem;
 }
 
 /* ───────────────────────────── Print ─────────────────────────────
