@@ -15,6 +15,12 @@ export default function LandingPage() {
           <span className="text-sm font-semibold text-ink-900">MediCare+</span>
         </div>
         <nav className="flex items-center gap-2">
+          <Link
+            href="/about"
+            className="hidden rounded-md px-3 py-1.5 text-sm font-medium text-ink-700 hover:bg-ink-900/5 sm:inline-block"
+          >
+            About
+          </Link>
           <Link href="/login" className="rounded-md px-3 py-1.5 text-sm font-medium text-ink-700 hover:bg-ink-900/5">
             Sign in
           </Link>
@@ -72,6 +78,20 @@ export default function LandingPage() {
           </div>
         ))}
       </section>
+
+      <footer className="border-t border-rule px-6 py-6">
+        <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-3 text-sm text-ink-500">
+          <p>&copy; {new Date().getFullYear()} MediCare+</p>
+          <div className="flex gap-4">
+            <Link href="/about" className="hover:text-ink-900 hover:underline">
+              About
+            </Link>
+            <Link href="/emergency" className="hover:text-ink-900 hover:underline">
+              Emergency information
+            </Link>
+          </div>
+        </div>
+      </footer>
     </main>
   );
 }

@@ -57,6 +57,21 @@ export function NotificationBell() {
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, []);
 
+  async function openNotification(n: Notification) {
+    setOpen(false);
+    if (n.isRead) return;
+    // Optimistic: the item is about to be navigated away from, so there's no
+    // later render to reconcile against if this fails — but the next poll
+    // will pick up the true state regardless.
+    setItems((prev) => prev.map((item) => (item.id === n.id ? { ...item, isRead: true } : item)));
+    setUnread((prev) => Math.max(0, prev - 1));
+    try {
+      await apiSend("PATCH", `/notifications/${n.id}`);
+    } catch {
+      // The next poll will reconcile if this failed.
+    }
+  }
+
   async function markAllRead() {
     setItems((prev) => prev.map((n) => ({ ...n, isRead: true })));
     setUnread(0);
@@ -108,7 +123,7 @@ export function NotificationBell() {
                 <Link
                   key={n.id}
                   href={n.link ?? "#"}
-                  onClick={() => setOpen(false)}
+                  onClick={() => openNotification(n)}
                   className={`block border-b border-rule px-4 py-3 text-sm last:border-0 hover:bg-paper ${
                     !n.isRead ? "bg-accent-050" : ""
                   }`}

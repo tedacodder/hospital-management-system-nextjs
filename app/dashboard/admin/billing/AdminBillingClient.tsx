@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/Button";
 import { Card, EmptyState, LoadingRows } from "@/components/ui/Card";
 import { Dialog } from "@/components/ui/Dialog";
 import { SelectField, TextField } from "@/components/ui/Field";
+import { Pagination } from "@/components/ui/Pagination";
 import { useToast } from "@/components/ui/Toast";
-import { apiGet, apiSend, ApiError } from "@/lib/api-client";
+import { apiGet, apiGetPaged, apiSend, ApiError, type ApiMeta } from "@/lib/api-client";
 
 type Invoice = {
   id: number;
@@ -30,16 +31,26 @@ const emptyLine = (): Line => ({ description: "", quantity: "1", unitPrice: "" }
 export default function AdminBillingClient() {
   const { push } = useToast();
   const [invoices, setInvoices] = useState<Invoice[] | null>(null);
+  const [meta, setMeta] = useState<ApiMeta | null>(null);
+  const [page, setPage] = useState(1);
   const [patients, setPatients] = useState<PatientOption[]>([]);
   const [createOpen, setCreateOpen] = useState(false);
   const [payFor, setPayFor] = useState<Invoice | null>(null);
 
   function load() {
-    apiGet<Invoice[]>("/invoices", { pageSize: 100 }).then(setInvoices).catch(() => setInvoices([]));
+    apiGetPaged<Invoice[]>("/invoices", { page, pageSize: 20 })
+      .then(({ data, meta }) => {
+        setInvoices(data);
+        setMeta(meta);
+      })
+      .catch(() => setInvoices([]));
   }
 
   useEffect(() => {
     load();
+  }, [page]);
+
+  useEffect(() => {
     apiGet<PatientOption[]>("/patients", { pageSize: 200 }).then(setPatients).catch(() => {});
   }, []);
 
@@ -64,43 +75,46 @@ export default function AdminBillingClient() {
           <EmptyState title="No invoices yet" body="Create the first invoice above." />
         ) : (
           <Card padded={false} className="overflow-hidden">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b border-rule bg-paper text-xs text-ink-500">
-                <tr>
-                  <th className="px-4 py-2.5 font-medium">Invoice</th>
-                  <th className="px-4 py-2.5 font-medium">Patient</th>
-                  <th className="px-4 py-2.5 font-medium">Issued</th>
-                  <th className="px-4 py-2.5 font-medium">Total</th>
-                  <th className="px-4 py-2.5 font-medium">Outstanding</th>
-                  <th className="px-4 py-2.5 font-medium">Status</th>
-                  <th className="px-4 py-2.5" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-rule">
-                {invoices.map((inv) => {
-                  const owed = outstanding(inv);
-                  return (
-                    <tr key={inv.id}>
-                      <td className="px-4 py-3 font-mono text-ink-900">{inv.number}</td>
-                      <td className="px-4 py-3 text-ink-900">{inv.patient.user.name}</td>
-                      <td className="px-4 py-3 text-ink-500">{new Date(inv.issuedAt).toLocaleDateString()}</td>
-                      <td className="px-4 py-3 font-mono text-ink-900">{inv.total}</td>
-                      <td className="px-4 py-3 font-mono text-ink-700">{owed.toFixed(2)}</td>
-                      <td className="px-4 py-3">
-                        <InvoiceStatusBadge status={inv.status} />
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        {owed > 0 && (
-                          <button onClick={() => setPayFor(inv)} className="text-xs font-medium text-accent-700 hover:underline">
-                            Record payment
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-rule bg-paper text-xs text-ink-500">
+                  <tr>
+                    <th className="px-4 py-2.5 font-medium">Invoice</th>
+                    <th className="px-4 py-2.5 font-medium">Patient</th>
+                    <th className="px-4 py-2.5 font-medium">Issued</th>
+                    <th className="px-4 py-2.5 font-medium">Total</th>
+                    <th className="px-4 py-2.5 font-medium">Outstanding</th>
+                    <th className="px-4 py-2.5 font-medium">Status</th>
+                    <th className="px-4 py-2.5" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-rule">
+                  {invoices.map((inv) => {
+                    const owed = outstanding(inv);
+                    return (
+                      <tr key={inv.id}>
+                        <td className="px-4 py-3 font-mono text-ink-900">{inv.number}</td>
+                        <td className="px-4 py-3 text-ink-900">{inv.patient.user.name}</td>
+                        <td className="px-4 py-3 text-ink-500">{new Date(inv.issuedAt).toLocaleDateString()}</td>
+                        <td className="px-4 py-3 font-mono text-ink-900">{inv.total}</td>
+                        <td className="px-4 py-3 font-mono text-ink-700">{owed.toFixed(2)}</td>
+                        <td className="px-4 py-3">
+                          <InvoiceStatusBadge status={inv.status} />
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          {owed > 0 && (
+                            <button onClick={() => setPayFor(inv)} className="text-xs font-medium text-accent-700 hover:underline">
+                              Record payment
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <Pagination meta={meta} onPageChange={setPage} />
           </Card>
         )}
       </div>
@@ -261,7 +275,10 @@ function CreateInvoiceDialog({
         </p>
 
         {error && (
-          <p className="rounded-md bg-[var(--color-signal-stop-bg)] px-3 py-2 text-sm text-[var(--color-signal-stop)]">
+          <p
+            role="alert"
+            className="rounded-md bg-[var(--color-signal-stop-bg)] px-3 py-2 text-sm text-[var(--color-signal-stop)]"
+          >
             {error}
           </p>
         )}
@@ -330,7 +347,10 @@ function RecordPaymentDialog({
         <TextField label="Reference (optional)" value={reference} onChange={(e) => setReference(e.target.value)} />
 
         {error && (
-          <p className="rounded-md bg-[var(--color-signal-stop-bg)] px-3 py-2 text-sm text-[var(--color-signal-stop)]">
+          <p
+            role="alert"
+            className="rounded-md bg-[var(--color-signal-stop-bg)] px-3 py-2 text-sm text-[var(--color-signal-stop)]"
+          >
             {error}
           </p>
         )}

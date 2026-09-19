@@ -167,7 +167,7 @@ export function VisitDialog({ open, onClose, patientId, patientName, appointment
         )}
 
         {error && (
-          <p className="rounded-md bg-[var(--color-signal-stop-bg)] px-3 py-2 text-sm text-[var(--color-signal-stop)]">
+          <p role="alert" className="rounded-md bg-[var(--color-signal-stop-bg)] px-3 py-2 text-sm text-[var(--color-signal-stop)]">
             {error}
           </p>
         )}

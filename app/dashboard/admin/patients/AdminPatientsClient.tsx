@@ -8,7 +8,8 @@ import { DocumentsPanel } from "@/components/DocumentsPanel";
 import { Card, EmptyState, LoadingRows } from "@/components/ui/Card";
 import { Dialog } from "@/components/ui/Dialog";
 import { TextField } from "@/components/ui/Field";
-import { apiGet } from "@/lib/api-client";
+import { Pagination } from "@/components/ui/Pagination";
+import { apiGetPaged, type ApiMeta } from "@/lib/api-client";
 
 type Patient = {
   id: number;
@@ -20,13 +21,11 @@ type Patient = {
   _count: { appointments: number };
 };
 
-type Meta = { page: number; pageSize: number; total: number; totalPages: number };
-
 export default function AdminPatientsClient() {
   const { status } = useSession();
   const router = useRouter();
   const [rows, setRows] = useState<Patient[] | null>(null);
-  const [meta, setMeta] = useState<Meta | null>(null);
+  const [meta, setMeta] = useState<ApiMeta | null>(null);
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
   const [docsFor, setDocsFor] = useState<Patient | null>(null);
@@ -38,9 +37,10 @@ export default function AdminPatientsClient() {
   useEffect(() => {
     if (status !== "authenticated") return;
     const handle = setTimeout(() => {
-      apiGet<Patient[]>("/patients", { q: q || undefined, page, pageSize: 20 })
-        .then((data) => {
+      apiGetPaged<Patient[]>("/patients", { q: q || undefined, page, pageSize: 20 })
+        .then(({ data, meta }) => {
           setRows(data);
+          setMeta(meta);
         })
         .catch(() => setRows([]));
     }, 250);
@@ -74,44 +74,47 @@ export default function AdminPatientsClient() {
           <EmptyState title="No patients found" body={q ? "Try a different search." : "No patients are registered yet."} />
         ) : (
           <Card padded={false} className="overflow-hidden">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b border-rule bg-paper text-xs text-ink-500">
-                <tr>
-                  <th className="px-4 py-2.5 font-medium">MRN</th>
-                  <th className="px-4 py-2.5 font-medium">Name</th>
-                  <th className="px-4 py-2.5 font-medium">Contact</th>
-                  <th className="px-4 py-2.5 font-medium">Age / Gender</th>
-                  <th className="px-4 py-2.5 font-medium">Visits</th>
-                  <th className="px-4 py-2.5 font-medium">Registered</th>
-                  <th className="px-4 py-2.5" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-rule">
-                {rows.map((p) => (
-                  <tr key={p.id}>
-                    <td className="px-4 py-3 font-mono text-ink-900">{p.mrn}</td>
-                    <td className="px-4 py-3 text-ink-900">{p.user.name}</td>
-                    <td className="px-4 py-3 text-ink-500">
-                      <div>{p.user.email}</div>
-                      <div>{p.user.phone}</div>
-                    </td>
-                    <td className="px-4 py-3 text-ink-700">
-                      {p.user.age || "—"} {p.user.gender && `· ${p.user.gender}`}
-                    </td>
-                    <td className="px-4 py-3 text-ink-700">{p._count.appointments}</td>
-                    <td className="px-4 py-3 text-ink-500">{new Date(p.createdAt).toLocaleDateString()}</td>
-                    <td className="px-4 py-3 text-right">
-                      <button
-                        onClick={() => setDocsFor(p)}
-                        className="text-xs font-medium text-accent-700 hover:underline"
-                      >
-                        Documents
-                      </button>
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-rule bg-paper text-xs text-ink-500">
+                  <tr>
+                    <th className="px-4 py-2.5 font-medium">MRN</th>
+                    <th className="px-4 py-2.5 font-medium">Name</th>
+                    <th className="px-4 py-2.5 font-medium">Contact</th>
+                    <th className="px-4 py-2.5 font-medium">Age / Gender</th>
+                    <th className="px-4 py-2.5 font-medium">Visits</th>
+                    <th className="px-4 py-2.5 font-medium">Registered</th>
+                    <th className="px-4 py-2.5" />
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-rule">
+                  {rows.map((p) => (
+                    <tr key={p.id}>
+                      <td className="px-4 py-3 font-mono text-ink-900">{p.mrn}</td>
+                      <td className="px-4 py-3 text-ink-900">{p.user.name}</td>
+                      <td className="px-4 py-3 text-ink-500">
+                        <div>{p.user.email}</div>
+                        <div>{p.user.phone}</div>
+                      </td>
+                      <td className="px-4 py-3 text-ink-700">
+                        {p.user.age || "—"} {p.user.gender && `· ${p.user.gender}`}
+                      </td>
+                      <td className="px-4 py-3 text-ink-700">{p._count.appointments}</td>
+                      <td className="px-4 py-3 text-ink-500">{new Date(p.createdAt).toLocaleDateString()}</td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          onClick={() => setDocsFor(p)}
+                          className="text-xs font-medium text-accent-700 hover:underline"
+                        >
+                          Documents
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <Pagination meta={meta} onPageChange={setPage} />
           </Card>
         )}
       </div>

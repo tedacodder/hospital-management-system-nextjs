@@ -101,7 +101,7 @@ export default function ProfileClient() {
               <TextField label="Address" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
 
               {profileError && (
-                <p className="rounded-md bg-[var(--color-signal-stop-bg)] px-3 py-2 text-sm text-[var(--color-signal-stop)]">
+                <p role="alert" className="rounded-md bg-[var(--color-signal-stop-bg)] px-3 py-2 text-sm text-[var(--color-signal-stop)]">
                   {profileError}
                 </p>
               )}
@@ -140,7 +140,7 @@ export default function ProfileClient() {
             />
 
             {pwError && (
-              <p className="rounded-md bg-[var(--color-signal-stop-bg)] px-3 py-2 text-sm text-[var(--color-signal-stop)]">
+              <p role="alert" className="rounded-md bg-[var(--color-signal-stop-bg)] px-3 py-2 text-sm text-[var(--color-signal-stop)]">
                 {pwError}
               </p>
             )}

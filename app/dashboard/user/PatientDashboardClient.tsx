@@ -9,6 +9,7 @@ import { DocumentsPanel } from "@/components/DocumentsPanel";
 import { AppointmentStatusBadge, InvoiceStatusBadge, PrescriptionStatusBadge } from "@/components/ui/Badge";
 import { Card, CardHeader, EmptyState, ErrorState, LoadingRows, StatCard } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { useToast } from "@/components/ui/Toast";
 import { apiGet, apiSend, ApiError } from "@/lib/api-client";
 
 type Stats = {
@@ -61,6 +62,7 @@ type Tab = (typeof TABS)[number];
 export default function PatientDashboardClient({ paidInvoiceNumber }: { paidInvoiceNumber?: string }) {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { push } = useToast();
   const [tab, setTab] = useState<Tab>("Appointments");
 
   const [stats, setStats] = useState<Stats | null>(null);
@@ -103,8 +105,9 @@ export default function PatientDashboardClient({ paidInvoiceNumber }: { paidInvo
     try {
       await apiSend("PATCH", `/appointments/${id}`, { status: "CANCELLED" });
       setAppointments((prev) => prev?.map((a) => (a.id === id ? { ...a, status: "CANCELLED" } : a)) ?? null);
-    } catch {
-      // Leave the row as-is; the user can retry.
+    } catch (err) {
+      // Leave the row as-is; the user can retry, but they need to know why.
+      push(err instanceof ApiError ? err.message : "Couldn't cancel that appointment. Please try again.", "error");
     } finally {
       setCancellingId(null);
     }
@@ -193,44 +196,46 @@ export default function PatientDashboardClient({ paidInvoiceNumber }: { paidInvo
             />
           ) : (
             <Card padded={false} className="overflow-hidden">
-              <table className="w-full text-left text-sm">
-                <thead className="border-b border-rule bg-paper text-xs text-ink-500">
-                  <tr>
-                    <th className="px-4 py-2.5 font-medium">Date</th>
-                    <th className="px-4 py-2.5 font-medium">Doctor</th>
-                    <th className="px-4 py-2.5 font-medium">Department</th>
-                    <th className="px-4 py-2.5 font-medium">Status</th>
-                    <th className="px-4 py-2.5" />
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-rule">
-                  {appointments.map((a) => (
-                    <tr key={a.id}>
-                      <td className="px-4 py-3 font-mono text-ink-900">
-                        {new Date(a.date).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}
-                      </td>
-                      <td className="px-4 py-3 text-ink-700">
-                        {a.doctor?.user.name ? `Dr. ${a.doctor.user.name}` : "Unassigned"}
-                      </td>
-                      <td className="px-4 py-3 text-ink-700">{a.department}</td>
-                      <td className="px-4 py-3">
-                        <AppointmentStatusBadge status={a.status} />
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        {(a.status === "PENDING" || a.status === "CONFIRMED") && (
-                          <button
-                            onClick={() => cancelAppointment(a.id)}
-                            disabled={cancellingId === a.id}
-                            className="text-xs font-medium text-[var(--color-signal-stop)] hover:underline disabled:opacity-50"
-                          >
-                            Cancel
-                          </button>
-                        )}
-                      </td>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="border-b border-rule bg-paper text-xs text-ink-500">
+                    <tr>
+                      <th className="px-4 py-2.5 font-medium">Date</th>
+                      <th className="px-4 py-2.5 font-medium">Doctor</th>
+                      <th className="px-4 py-2.5 font-medium">Department</th>
+                      <th className="px-4 py-2.5 font-medium">Status</th>
+                      <th className="px-4 py-2.5" />
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-rule">
+                    {appointments.map((a) => (
+                      <tr key={a.id}>
+                        <td className="px-4 py-3 font-mono text-ink-900">
+                          {new Date(a.date).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}
+                        </td>
+                        <td className="px-4 py-3 text-ink-700">
+                          {a.doctor?.user.name ? `Dr. ${a.doctor.user.name}` : "Unassigned"}
+                        </td>
+                        <td className="px-4 py-3 text-ink-700">{a.department}</td>
+                        <td className="px-4 py-3">
+                          <AppointmentStatusBadge status={a.status} />
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          {(a.status === "PENDING" || a.status === "CONFIRMED") && (
+                            <button
+                              onClick={() => cancelAppointment(a.id)}
+                              disabled={cancellingId === a.id}
+                              className="text-xs font-medium text-[var(--color-signal-stop)] hover:underline disabled:opacity-50"
+                            >
+                              Cancel
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </Card>
           ))}
 
@@ -273,44 +278,46 @@ export default function PatientDashboardClient({ paidInvoiceNumber }: { paidInvo
             <EmptyState title="No invoices yet" body="Invoices from your visits will appear here." />
           ) : (
             <Card padded={false} className="overflow-hidden">
-              <table className="w-full text-left text-sm">
-                <thead className="border-b border-rule bg-paper text-xs text-ink-500">
-                  <tr>
-                    <th className="px-4 py-2.5 font-medium">Invoice</th>
-                    <th className="px-4 py-2.5 font-medium">Issued</th>
-                    <th className="px-4 py-2.5 font-medium">Due</th>
-                    <th className="px-4 py-2.5 font-medium">Amount</th>
-                    <th className="px-4 py-2.5 font-medium">Status</th>
-                    <th className="px-4 py-2.5" />
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-rule">
-                  {invoices.map((inv) => (
-                    <tr key={inv.id}>
-                      <td className="px-4 py-3 font-mono text-ink-900">{inv.number}</td>
-                      <td className="px-4 py-3 text-ink-700">{new Date(inv.issuedAt).toLocaleDateString()}</td>
-                      <td className="px-4 py-3 text-ink-700">
-                        {inv.dueAt ? new Date(inv.dueAt).toLocaleDateString() : "—"}
-                      </td>
-                      <td className="px-4 py-3 font-mono text-ink-900">{inv.total}</td>
-                      <td className="px-4 py-3">
-                        <InvoiceStatusBadge status={inv.status} />
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        {onlinePaymentsEnabled && (inv.status === "PENDING" || inv.status === "OVERDUE") && (
-                          <button
-                            onClick={() => payOnline(inv.id)}
-                            disabled={payingId === inv.id}
-                            className="text-xs font-medium text-accent-700 hover:underline disabled:opacity-50"
-                          >
-                            Pay online
-                          </button>
-                        )}
-                      </td>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="border-b border-rule bg-paper text-xs text-ink-500">
+                    <tr>
+                      <th className="px-4 py-2.5 font-medium">Invoice</th>
+                      <th className="px-4 py-2.5 font-medium">Issued</th>
+                      <th className="px-4 py-2.5 font-medium">Due</th>
+                      <th className="px-4 py-2.5 font-medium">Amount</th>
+                      <th className="px-4 py-2.5 font-medium">Status</th>
+                      <th className="px-4 py-2.5" />
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-rule">
+                    {invoices.map((inv) => (
+                      <tr key={inv.id}>
+                        <td className="px-4 py-3 font-mono text-ink-900">{inv.number}</td>
+                        <td className="px-4 py-3 text-ink-700">{new Date(inv.issuedAt).toLocaleDateString()}</td>
+                        <td className="px-4 py-3 text-ink-700">
+                          {inv.dueAt ? new Date(inv.dueAt).toLocaleDateString() : "—"}
+                        </td>
+                        <td className="px-4 py-3 font-mono text-ink-900">{inv.total}</td>
+                        <td className="px-4 py-3">
+                          <InvoiceStatusBadge status={inv.status} />
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          {onlinePaymentsEnabled && (inv.status === "PENDING" || inv.status === "OVERDUE") && (
+                            <button
+                              onClick={() => payOnline(inv.id)}
+                              disabled={payingId === inv.id}
+                              className="text-xs font-medium text-accent-700 hover:underline disabled:opacity-50"
+                            >
+                              Pay online
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </Card>
           ))}
 

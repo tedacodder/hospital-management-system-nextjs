@@ -84,24 +84,26 @@ export default function AdminDepartmentsClient() {
           <EmptyState title="No departments yet" body="Add your first department above." />
         ) : (
           <Card padded={false} className="overflow-hidden">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b border-rule bg-paper text-xs text-ink-500">
-                <tr>
-                  <th className="px-4 py-2.5 font-medium">Name</th>
-                  <th className="px-4 py-2.5 font-medium">Description</th>
-                  <th className="px-4 py-2.5 font-medium">Doctors</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-rule">
-                {rows.map((d) => (
-                  <tr key={d.id}>
-                    <td className="px-4 py-3 font-medium text-ink-900">{d.name}</td>
-                    <td className="px-4 py-3 text-ink-500">{d.description ?? "—"}</td>
-                    <td className="px-4 py-3 text-ink-700">{d._count.doctors}</td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-rule bg-paper text-xs text-ink-500">
+                  <tr>
+                    <th className="px-4 py-2.5 font-medium">Name</th>
+                    <th className="px-4 py-2.5 font-medium">Description</th>
+                    <th className="px-4 py-2.5 font-medium">Doctors</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-rule">
+                  {rows.map((d) => (
+                    <tr key={d.id}>
+                      <td className="px-4 py-3 font-medium text-ink-900">{d.name}</td>
+                      <td className="px-4 py-3 text-ink-500">{d.description ?? "—"}</td>
+                      <td className="px-4 py-3 text-ink-700">{d._count.doctors}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </Card>
         )}
       </div>
