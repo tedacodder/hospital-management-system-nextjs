@@ -1,9 +1,9 @@
 import { forwardRef, type ButtonHTMLAttributes } from "react";
 
-type Variant = "primary" | "secondary" | "danger" | "ghost";
-type Size = "sm" | "md";
+export type ButtonVariant = "primary" | "secondary" | "danger" | "ghost" | "light" | "outlineLight";
+export type ButtonSize = "sm" | "md" | "lg";
 
-const VARIANT_CLASSES: Record<Variant, string> = {
+const VARIANT_CLASSES: Record<ButtonVariant, string> = {
   primary:
     "bg-accent-700 text-white hover:bg-accent-600 disabled:bg-ink-300",
   secondary:
@@ -11,16 +11,35 @@ const VARIANT_CLASSES: Record<Variant, string> = {
   danger:
     "bg-white text-[var(--color-signal-stop)] border border-[var(--color-signal-stop)]/30 hover:bg-[var(--color-signal-stop-bg)] disabled:opacity-50",
   ghost: "text-ink-700 hover:bg-ink-900/5 disabled:text-ink-300",
+  // For dark surfaces (brand panel, closing call-to-action).
+  light: "bg-white text-ink-900 hover:bg-accent-050 disabled:opacity-60",
+  outlineLight: "border border-white/30 text-white hover:bg-white/10 disabled:opacity-60",
 };
 
-const SIZE_CLASSES: Record<Size, string> = {
-  sm: "h-8 px-3 text-sm",
-  md: "h-10 px-4 text-sm",
+// Radius travels with size so a large button is not just a bigger small one.
+const SIZE_CLASSES: Record<ButtonSize, string> = {
+  sm: "h-8 px-3 text-sm rounded-md",
+  md: "h-10 px-4 text-sm rounded-md",
+  lg: "h-12 px-6 text-[0.9375rem] rounded-lg",
 };
+
+/// One source for button styling, shared by <Button> and <ButtonLink> so a
+/// link that looks like a button is guaranteed to match a real one.
+export function buttonClasses({
+  variant = "primary",
+  size = "md",
+  className = "",
+}: {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  className?: string;
+} = {}): string {
+  return `inline-flex items-center justify-center gap-2 font-medium transition-[background-color,border-color,color,transform] duration-150 active:translate-y-px focus-visible:outline-none disabled:cursor-not-allowed disabled:active:translate-y-0 ${VARIANT_CLASSES[variant]} ${SIZE_CLASSES[size]} ${className}`;
+}
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: Variant;
-  size?: Size;
+  variant?: ButtonVariant;
+  size?: ButtonSize;
   loading?: boolean;
 }
 
@@ -32,7 +51,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     <button
       ref={ref}
       disabled={disabled || loading}
-      className={`inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors focus-visible:outline-none disabled:cursor-not-allowed ${VARIANT_CLASSES[variant]} ${SIZE_CLASSES[size]} ${className}`}
+      aria-busy={loading || undefined}
+      className={buttonClasses({ variant, size, className })}
       {...rest}
     >
       {loading && (
