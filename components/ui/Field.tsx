@@ -8,12 +8,14 @@ function FieldShell({
   htmlFor,
   error,
   hint,
+  messageId,
   children,
 }: {
   label: string;
   htmlFor: string;
   error?: string;
   hint?: string;
+  messageId: string;
   children: ReactNode;
 }) {
   return (
@@ -23,9 +25,13 @@ function FieldShell({
       </label>
       {children}
       {error ? (
-        <p className="text-xs text-[var(--color-signal-stop)]">{error}</p>
+        <p id={messageId} role="alert" className="text-xs text-[var(--color-signal-stop)]">
+          {error}
+        </p>
       ) : hint ? (
-        <p className="text-xs text-ink-500">{hint}</p>
+        <p id={messageId} className="text-xs text-ink-500">
+          {hint}
+        </p>
       ) : null}
     </div>
   );
@@ -46,12 +52,14 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
   ref,
 ) {
   const fieldId = id ?? `field-${label.toLowerCase().replace(/\s+/g, "-")}`;
+  const messageId = `${fieldId}-message`;
   return (
-    <FieldShell label={label} htmlFor={fieldId} error={error} hint={hint}>
+    <FieldShell label={label} htmlFor={fieldId} error={error} hint={hint} messageId={messageId}>
       <input
         ref={ref}
         id={fieldId}
         aria-invalid={Boolean(error)}
+        aria-describedby={error || hint ? messageId : undefined}
         className={`${controlClasses} ${error ? errorControlClasses : ""} ${className}`}
         {...rest}
       />
@@ -70,12 +78,14 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(funct
   ref,
 ) {
   const fieldId = id ?? `field-${label.toLowerCase().replace(/\s+/g, "-")}`;
+  const messageId = `${fieldId}-message`;
   return (
-    <FieldShell label={label} htmlFor={fieldId} error={error} hint={hint}>
+    <FieldShell label={label} htmlFor={fieldId} error={error} hint={hint} messageId={messageId}>
       <select
         ref={ref}
         id={fieldId}
         aria-invalid={Boolean(error)}
+        aria-describedby={error || hint ? messageId : undefined}
         className={`${controlClasses} ${error ? errorControlClasses : ""} ${className}`}
         {...rest}
       >
@@ -94,12 +104,14 @@ interface TextAreaFieldProps extends TextareaHTMLAttributes<HTMLTextAreaElement>
 export const TextAreaField = forwardRef<HTMLTextAreaElement, TextAreaFieldProps>(
   function TextAreaField({ label, error, hint, id, className = "", ...rest }, ref) {
     const fieldId = id ?? `field-${label.toLowerCase().replace(/\s+/g, "-")}`;
+    const messageId = `${fieldId}-message`;
     return (
-      <FieldShell label={label} htmlFor={fieldId} error={error} hint={hint}>
+      <FieldShell label={label} htmlFor={fieldId} error={error} hint={hint} messageId={messageId}>
         <textarea
           ref={ref}
           id={fieldId}
           aria-invalid={Boolean(error)}
+          aria-describedby={error || hint ? messageId : undefined}
           className={`${controlClasses} h-auto min-h-24 resize-y py-2 ${error ? errorControlClasses : ""} ${className}`}
           {...rest}
         />

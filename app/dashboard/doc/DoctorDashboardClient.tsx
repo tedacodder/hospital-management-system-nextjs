@@ -7,7 +7,8 @@ import { AppShell } from "@/components/AppShell";
 import { AppointmentStatusBadge } from "@/components/ui/Badge";
 import { Card, EmptyState, ErrorState, LoadingRows, StatCard } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { apiGet, apiSend } from "@/lib/api-client";
+import { useToast } from "@/components/ui/Toast";
+import { apiGet, apiSend, ApiError } from "@/lib/api-client";
 import { AvailabilityEditor } from "./AvailabilityEditor";
 import { VisitDialog } from "./VisitDialog";
 
@@ -43,6 +44,7 @@ type Tab = (typeof TABS)[number];
 export default function DoctorDashboardClient() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { push } = useToast();
   const [tab, setTab] = useState<Tab>("Today's schedule");
 
   const [stats, setStats] = useState<Stats | null>(null);
@@ -70,6 +72,8 @@ export default function DoctorDashboardClient() {
     try {
       await apiSend("PATCH", `/appointments/${id}`, { status: next });
       loadStats();
+    } catch (err) {
+      push(err instanceof ApiError ? err.message : "Couldn't update that appointment. Please try again.", "error");
     } finally {
       setBusyId(null);
     }
@@ -161,35 +165,37 @@ export default function DoctorDashboardClient() {
             <EmptyState title="No patients yet" body="Patients you've seen will appear here." />
           ) : (
             <Card padded={false} className="overflow-hidden">
-              <table className="w-full text-left text-sm">
-                <thead className="border-b border-rule bg-paper text-xs text-ink-500">
-                  <tr>
-                    <th className="px-4 py-2.5 font-medium">MRN</th>
-                    <th className="px-4 py-2.5 font-medium">Name</th>
-                    <th className="px-4 py-2.5 font-medium">Contact</th>
-                    <th className="px-4 py-2.5 font-medium">Visits</th>
-                    <th className="px-4 py-2.5" />
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-rule">
-                  {patients.map((p) => (
-                    <tr key={p.id}>
-                      <td className="px-4 py-3 font-mono text-ink-900">{p.mrn}</td>
-                      <td className="px-4 py-3 text-ink-900">{p.user.name}</td>
-                      <td className="px-4 py-3 text-ink-500">{p.user.phone || p.user.email}</td>
-                      <td className="px-4 py-3 text-ink-700">{p._count.appointments}</td>
-                      <td className="px-4 py-3 text-right">
-                        <button
-                          onClick={() => setVisitFor({ id: p.id, name: p.user.name ?? "Patient" })}
-                          className="text-xs font-medium text-accent-700 hover:underline"
-                        >
-                          Add visit note
-                        </button>
-                      </td>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="border-b border-rule bg-paper text-xs text-ink-500">
+                    <tr>
+                      <th className="px-4 py-2.5 font-medium">MRN</th>
+                      <th className="px-4 py-2.5 font-medium">Name</th>
+                      <th className="px-4 py-2.5 font-medium">Contact</th>
+                      <th className="px-4 py-2.5 font-medium">Visits</th>
+                      <th className="px-4 py-2.5" />
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-rule">
+                    {patients.map((p) => (
+                      <tr key={p.id}>
+                        <td className="px-4 py-3 font-mono text-ink-900">{p.mrn}</td>
+                        <td className="px-4 py-3 text-ink-900">{p.user.name}</td>
+                        <td className="px-4 py-3 text-ink-500">{p.user.phone || p.user.email}</td>
+                        <td className="px-4 py-3 text-ink-700">{p._count.appointments}</td>
+                        <td className="px-4 py-3 text-right">
+                          <button
+                            onClick={() => setVisitFor({ id: p.id, name: p.user.name ?? "Patient" })}
+                            className="text-xs font-medium text-accent-700 hover:underline"
+                          >
+                            Add visit note
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </Card>
           )}
         </div>

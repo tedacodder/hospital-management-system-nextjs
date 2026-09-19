@@ -204,7 +204,7 @@ export default function AppointmentPageClient() {
           )}
 
           {error && (
-            <p className="mt-4 rounded-md bg-[var(--color-signal-stop-bg)] px-3 py-2 text-sm text-[var(--color-signal-stop)]">
+            <p role="alert" className="mt-4 rounded-md bg-[var(--color-signal-stop-bg)] px-3 py-2 text-sm text-[var(--color-signal-stop)]">
               {error}
             </p>
           )}

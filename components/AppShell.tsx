@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { NotificationBell } from "@/components/NotificationBell";
 
 // Replaces Navbar.tsx, Sidebar.tsx, DocNav.tsx and PatientNav.tsx with one
@@ -144,6 +144,23 @@ export function AppShell({ children }: { children: ReactNode }) {
   const role = (session?.user?.role ?? "PATIENT") as keyof typeof NAV;
   const items = NAV[role] ?? NAV.PATIENT;
 
+  // The desktop sidebar is always in the DOM; the mobile drawer is a modal
+  // overlay, so it needs the same escape-to-close and scroll-lock behavior
+  // as the Dialog component — a keyboard or screen-reader user otherwise has
+  // no way to close it short of clicking a nav link.
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMobileOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [mobileOpen]);
+
   async function handleLogout() {
     await signOut({ redirect: false });
     router.push("/login");
@@ -160,8 +177,18 @@ export function AppShell({ children }: { children: ReactNode }) {
       {mobileOpen && (
         <div className="fixed inset-0 z-40 md:hidden" data-print="hide">
           <div className="absolute inset-0 bg-ink-900/40" onClick={() => setMobileOpen(false)} aria-hidden="true" />
-          <aside className="relative flex h-full w-64 flex-col bg-surface">
-            <SidebarContent items={items} pathname={pathname} onNavigate={() => setMobileOpen(false)} />
+          <aside
+            role="dialog"
+            aria-modal="true"
+            aria-label="Navigation"
+            className="relative flex h-full w-64 flex-col bg-surface"
+          >
+            <SidebarContent
+              items={items}
+              pathname={pathname}
+              onNavigate={() => setMobileOpen(false)}
+              onClose={() => setMobileOpen(false)}
+            />
           </aside>
         </div>
       )}
@@ -215,10 +242,12 @@ function SidebarContent({
   items,
   pathname,
   onNavigate,
+  onClose,
 }: {
   items: NavItem[];
   pathname: string | null;
   onNavigate?: () => void;
+  onClose?: () => void;
 }) {
   return (
     <>
@@ -227,6 +256,17 @@ function SidebarContent({
           M+
         </div>
         <span className="text-sm font-semibold text-ink-900">MediCare+</span>
+        {onClose && (
+          <button
+            onClick={onClose}
+            aria-label="Close navigation"
+            className="ml-auto rounded-md p-1.5 text-ink-500 hover:bg-ink-900/5 hover:text-ink-900"
+          >
+            <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+              <path d="M4 4L14 14M14 4L4 14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+            </svg>
+          </button>
+        )}
       </div>
       <nav className="flex-1 space-y-0.5 p-3">
         {items.map((item) => {

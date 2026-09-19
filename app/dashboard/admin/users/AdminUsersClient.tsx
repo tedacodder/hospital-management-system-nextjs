@@ -9,8 +9,9 @@ import { Button } from "@/components/ui/Button";
 import { Card, EmptyState, LoadingRows } from "@/components/ui/Card";
 import { Dialog } from "@/components/ui/Dialog";
 import { SelectField, TextField } from "@/components/ui/Field";
+import { Pagination } from "@/components/ui/Pagination";
 import { useToast } from "@/components/ui/Toast";
-import { apiGet, apiSend, ApiError } from "@/lib/api-client";
+import { apiGet, apiGetPaged, apiSend, ApiError, type ApiMeta } from "@/lib/api-client";
 
 type UserRow = {
   id: number;
@@ -32,6 +33,8 @@ export default function AdminUsersClient() {
   const { push } = useToast();
 
   const [rows, setRows] = useState<UserRow[] | null>(null);
+  const [meta, setMeta] = useState<ApiMeta | null>(null);
+  const [page, setPage] = useState(1);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [formOpen, setFormOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -52,12 +55,21 @@ export default function AdminUsersClient() {
   }, [status, router]);
 
   function load() {
-    apiGet<UserRow[]>("/users", { pageSize: 100 }).then(setRows).catch(() => setRows([]));
+    apiGetPaged<UserRow[]>("/users", { page, pageSize: 20 })
+      .then(({ data, meta }) => {
+        setRows(data);
+        setMeta(meta);
+      })
+      .catch(() => setRows([]));
   }
 
   useEffect(() => {
     if (status !== "authenticated") return;
     load();
+  }, [status, page]);
+
+  useEffect(() => {
+    if (status !== "authenticated") return;
     apiGet<Department[]>("/departments").then(setDepartments).catch(() => {});
   }, [status]);
 
@@ -108,34 +120,37 @@ export default function AdminUsersClient() {
           <EmptyState title="No users found" />
         ) : (
           <Card padded={false} className="overflow-hidden">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b border-rule bg-paper text-xs text-ink-500">
-                <tr>
-                  <th className="px-4 py-2.5 font-medium">Name</th>
-                  <th className="px-4 py-2.5 font-medium">Email</th>
-                  <th className="px-4 py-2.5 font-medium">Role</th>
-                  <th className="px-4 py-2.5 font-medium">Last sign-in</th>
-                  <th className="px-4 py-2.5 font-medium">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-rule">
-                {rows.map((u) => (
-                  <tr key={u.id}>
-                    <td className="px-4 py-3 text-ink-900">{u.name}</td>
-                    <td className="px-4 py-3 text-ink-500">{u.email}</td>
-                    <td className="px-4 py-3">
-                      <Badge tone={ROLE_TONE[u.role]}>{u.role}</Badge>
-                    </td>
-                    <td className="px-4 py-3 text-ink-500">
-                      {u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString() : "Never"}
-                    </td>
-                    <td className="px-4 py-3">
-                      <Badge tone={u.isActive ? "ok" : "neutral"}>{u.isActive ? "Active" : "Disabled"}</Badge>
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-rule bg-paper text-xs text-ink-500">
+                  <tr>
+                    <th className="px-4 py-2.5 font-medium">Name</th>
+                    <th className="px-4 py-2.5 font-medium">Email</th>
+                    <th className="px-4 py-2.5 font-medium">Role</th>
+                    <th className="px-4 py-2.5 font-medium">Last sign-in</th>
+                    <th className="px-4 py-2.5 font-medium">Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-rule">
+                  {rows.map((u) => (
+                    <tr key={u.id}>
+                      <td className="px-4 py-3 text-ink-900">{u.name}</td>
+                      <td className="px-4 py-3 text-ink-500">{u.email}</td>
+                      <td className="px-4 py-3">
+                        <Badge tone={ROLE_TONE[u.role]}>{u.role}</Badge>
+                      </td>
+                      <td className="px-4 py-3 text-ink-500">
+                        {u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString() : "Never"}
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge tone={u.isActive ? "ok" : "neutral"}>{u.isActive ? "Active" : "Disabled"}</Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <Pagination meta={meta} onPageChange={setPage} />
           </Card>
         )}
       </div>
@@ -192,7 +207,10 @@ export default function AdminUsersClient() {
           )}
 
           {error && (
-            <p className="rounded-md bg-[var(--color-signal-stop-bg)] px-3 py-2 text-sm text-[var(--color-signal-stop)]">
+            <p
+              role="alert"
+              className="rounded-md bg-[var(--color-signal-stop-bg)] px-3 py-2 text-sm text-[var(--color-signal-stop)]"
+            >
               {error}
             </p>
           )}
