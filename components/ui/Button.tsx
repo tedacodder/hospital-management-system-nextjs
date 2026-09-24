@@ -1,7 +1,7 @@
 import { forwardRef, type ButtonHTMLAttributes } from "react";
 
 export type ButtonVariant = "primary" | "secondary" | "danger" | "ghost" | "light" | "outlineLight";
-export type ButtonSize = "sm" | "md" | "lg";
+export type ButtonSize = "sm" | "md" | "touch" | "lg";
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
   primary:
@@ -20,6 +20,8 @@ const VARIANT_CLASSES: Record<ButtonVariant, string> = {
 const SIZE_CLASSES: Record<ButtonSize, string> = {
   sm: "h-8 px-3 text-sm rounded-md",
   md: "h-10 px-4 text-sm rounded-md",
+  // 44px: the height of a large form control, for buttons that sit beside one.
+  touch: "h-11 px-4 text-sm rounded-lg",
   lg: "h-12 px-6 text-[0.9375rem] rounded-lg",
 };
 

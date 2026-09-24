@@ -3,136 +3,86 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { useEffect, useState, type ReactNode } from "react";
+import { useRef, useState, type ComponentType, type ReactNode, type RefObject, type SVGProps } from "react";
+import { LogoMark } from "@/components/brand/Logo";
 import { NotificationBell } from "@/components/NotificationBell";
+import { UserMenu } from "@/components/shell/UserMenu";
+import { Avatar } from "@/components/ui/Avatar";
+import { ButtonLink } from "@/components/ui/ButtonLink";
+import {
+  BuildingIcon,
+  CalendarIcon,
+  CloseIcon,
+  EmergencyIcon,
+  HomeIcon,
+  LogOutIcon,
+  MenuIcon,
+  MessageIcon,
+  PlusIcon,
+  ReceiptIcon,
+  StethoscopeIcon,
+  UserIcon,
+  UsersIcon,
+} from "@/components/ui/Icons";
+import { useModal } from "@/components/ui/useModal";
 
-// Replaces Navbar.tsx, Sidebar.tsx, DocNav.tsx and PatientNav.tsx with one
-// role-aware shell, so navigation only needs to be gotten right once.
+// One role-aware shell for every signed-in screen, so navigation only needs to
+// be gotten right once. Patients get a bottom tab bar on phones; the other
+// roles keep the slide-in drawer, because their navigation is longer.
 
-type NavItem = { label: string; href: string; icon: ReactNode };
-
-const ICONS = {
-  home: (
-    <path d="M3 9.5 10 4l7 5.5M5 8.5V16a1 1 0 0 0 1 1h3v-4.5h2V17h3a1 1 0 0 0 1-1V8.5" strokeLinejoin="round" />
-  ),
-  calendar: (
-    <>
-      <rect x="3.5" y="4.5" width="13" height="12" rx="1.5" />
-      <path d="M3.5 8h13M7 3v3M13 3v3" strokeLinecap="round" />
-    </>
-  ),
-  patients: (
-    <>
-      <circle cx="7" cy="7" r="2.5" />
-      <path d="M2.5 16c.5-3 2.2-4.5 4.5-4.5S11 13 11.5 16" strokeLinecap="round" />
-      <circle cx="14" cy="7.5" r="2" />
-      <path d="M13 11.2c1.8.1 3 1.4 3.5 3.6" strokeLinecap="round" />
-    </>
-  ),
-  doctors: (
-    <>
-      <circle cx="10" cy="6.5" r="3" />
-      <path d="M4 17c.7-4 2.8-6 6-6s5.3 2 6 6" strokeLinecap="round" />
-    </>
-  ),
-  records: (
-    <>
-      <path d="M6 3.5h6.5L16 7v9.5a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-12a1 1 0 0 1 1-1Z" strokeLinejoin="round" />
-      <path d="M8 9.5h4M8 12.5h4" strokeLinecap="round" />
-    </>
-  ),
-  prescription: (
-    <>
-      <path d="M5 3.5h10v13H5z" strokeLinejoin="round" />
-      <path d="M7.5 7h5M7.5 10h5M7.5 13h3" strokeLinecap="round" />
-    </>
-  ),
-  billing: (
-    <>
-      <rect x="3" y="5" width="14" height="10" rx="1.5" />
-      <path d="M3 8.5h14" strokeLinecap="round" />
-      <path d="M6 12h3" strokeLinecap="round" />
-    </>
-  ),
-  departments: (
-    <>
-      <path d="M4 16.5V8l6-4 6 4v8.5" strokeLinejoin="round" />
-      <path d="M8 16.5v-5h4v5" strokeLinejoin="round" />
-    </>
-  ),
-  users: (
-    <>
-      <circle cx="7" cy="6.5" r="2.5" />
-      <circle cx="14" cy="6.5" r="2" />
-      <path d="M2.5 16c.4-3 2-4.5 4.5-4.5S11 13 11.4 16M12.5 12c2 .2 3.3 1.6 3.9 4" strokeLinecap="round" />
-    </>
-  ),
-  messages: (
-    <path d="M3.5 4.5h13v9h-8L4.5 16v-2.5h-1v-9Z" strokeLinejoin="round" strokeLinecap="round" />
-  ),
-  emergency: (
-    <>
-      <path d="M10 2.5 17 6v5c0 4-3 6.5-7 7-4-.5-7-3-7-7V6Z" strokeLinejoin="round" />
-      <path d="M10 7v4M10 13.5v.01" strokeLinecap="round" />
-    </>
-  ),
-  profile: (
-    <>
-      <circle cx="10" cy="7" r="3" />
-      <path d="M4 17c.7-4 2.8-6 6-6s5.3 2 6 6" strokeLinecap="round" />
-    </>
-  ),
-} as const;
-
-function Icon({ path }: { path: ReactNode }) {
-  return (
-    <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true">
-      {path}
-    </svg>
-  );
-}
+type IconComponent = ComponentType<SVGProps<SVGSVGElement>>;
+type NavItem = { label: string; href: string; icon: IconComponent };
+type Role = "PATIENT" | "DOCTOR" | "STAFF" | "ADMIN";
 
 // Each entry is a real, working route. Nothing here links to a page that
 // doesn't exist — the earlier draft of this nav did, before those sections
 // were merged into single dashboard pages.
-const NAV: Record<"PATIENT" | "DOCTOR" | "STAFF" | "ADMIN", NavItem[]> = {
+const NAV: Record<Role, NavItem[]> = {
   PATIENT: [
-    { label: "Overview", href: "/dashboard/user", icon: <Icon path={ICONS.home} /> },
-    { label: "Book appointment", href: "/appointment", icon: <Icon path={ICONS.calendar} /> },
-    { label: "Messages", href: "/dashboard/messages", icon: <Icon path={ICONS.messages} /> },
-    { label: "Emergency", href: "/emergency", icon: <Icon path={ICONS.emergency} /> },
+    { label: "Overview", href: "/dashboard/user", icon: HomeIcon },
+    { label: "Book appointment", href: "/appointment", icon: CalendarIcon },
+    { label: "Messages", href: "/dashboard/messages", icon: MessageIcon },
+    { label: "Emergency", href: "/emergency", icon: EmergencyIcon },
   ],
   DOCTOR: [
-    { label: "Overview", href: "/dashboard/doc", icon: <Icon path={ICONS.home} /> },
-    { label: "Messages", href: "/dashboard/messages", icon: <Icon path={ICONS.messages} /> },
+    { label: "Overview", href: "/dashboard/doc", icon: HomeIcon },
+    { label: "Messages", href: "/dashboard/messages", icon: MessageIcon },
   ],
   STAFF: [
-    { label: "Overview", href: "/dashboard/admin", icon: <Icon path={ICONS.home} /> },
-    { label: "Patients", href: "/dashboard/admin/patients", icon: <Icon path={ICONS.patients} /> },
-    { label: "Doctors", href: "/dashboard/admin/doctors", icon: <Icon path={ICONS.doctors} /> },
-    { label: "Departments", href: "/dashboard/admin/departments", icon: <Icon path={ICONS.departments} /> },
-    { label: "Billing", href: "/dashboard/admin/billing", icon: <Icon path={ICONS.billing} /> },
-    { label: "Messages", href: "/dashboard/messages", icon: <Icon path={ICONS.messages} /> },
+    { label: "Overview", href: "/dashboard/admin", icon: HomeIcon },
+    { label: "Patients", href: "/dashboard/admin/patients", icon: UsersIcon },
+    { label: "Doctors", href: "/dashboard/admin/doctors", icon: StethoscopeIcon },
+    { label: "Departments", href: "/dashboard/admin/departments", icon: BuildingIcon },
+    { label: "Billing", href: "/dashboard/admin/billing", icon: ReceiptIcon },
+    { label: "Messages", href: "/dashboard/messages", icon: MessageIcon },
   ],
   ADMIN: [
-    { label: "Overview", href: "/dashboard/admin", icon: <Icon path={ICONS.home} /> },
-    { label: "Patients", href: "/dashboard/admin/patients", icon: <Icon path={ICONS.patients} /> },
-    { label: "Doctors", href: "/dashboard/admin/doctors", icon: <Icon path={ICONS.doctors} /> },
-    { label: "Departments", href: "/dashboard/admin/departments", icon: <Icon path={ICONS.departments} /> },
-    { label: "Billing", href: "/dashboard/admin/billing", icon: <Icon path={ICONS.billing} /> },
-    { label: "Users", href: "/dashboard/admin/users", icon: <Icon path={ICONS.users} /> },
-    { label: "Messages", href: "/dashboard/messages", icon: <Icon path={ICONS.messages} /> },
+    { label: "Overview", href: "/dashboard/admin", icon: HomeIcon },
+    { label: "Patients", href: "/dashboard/admin/patients", icon: UsersIcon },
+    { label: "Doctors", href: "/dashboard/admin/doctors", icon: StethoscopeIcon },
+    { label: "Departments", href: "/dashboard/admin/departments", icon: BuildingIcon },
+    { label: "Billing", href: "/dashboard/admin/billing", icon: ReceiptIcon },
+    { label: "Users", href: "/dashboard/admin/users", icon: UsersIcon },
+    { label: "Messages", href: "/dashboard/messages", icon: MessageIcon },
   ],
 };
 
-function initials(name: string | null | undefined) {
-  if (!name) return "?";
-  return name
-    .split(" ")
-    .map((p) => p[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
+const PROFILE_ITEM: NavItem = { label: "Profile", href: "/dashboard/profile", icon: UserIcon };
+
+function isActive(pathname: string | null, href: string) {
+  return pathname === href || (pathname?.startsWith(href + "/") ?? false);
+}
+
+/// The current section's name for the header, from the longest matching nav
+/// entry (so /dashboard/admin/patients reads "Patients", not "Overview").
+function titleFor(pathname: string | null, items: NavItem[]): string {
+  if (isActive(pathname, PROFILE_ITEM.href)) return "My profile";
+  const match = [...items].sort((a, b) => b.href.length - a.href.length).find((i) => isActive(pathname, i.href));
+  return match?.label ?? "";
+}
+
+function roleLabel(role: string) {
+  return role.charAt(0) + role.slice(1).toLowerCase();
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -140,26 +90,18 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const drawerRef = useRef<HTMLElement>(null);
+  const drawerCloseRef = useRef<HTMLButtonElement>(null);
 
-  const role = (session?.user?.role ?? "PATIENT") as keyof typeof NAV;
+  const role = (session?.user?.role ?? "PATIENT") as Role;
   const items = NAV[role] ?? NAV.PATIENT;
+  const isPatient = role === "PATIENT";
+  const name = session?.user?.name;
 
-  // The desktop sidebar is always in the DOM; the mobile drawer is a modal
-  // overlay, so it needs the same escape-to-close and scroll-lock behavior
-  // as the Dialog component — a keyboard or screen-reader user otherwise has
-  // no way to close it short of clicking a nav link.
-  useEffect(() => {
-    if (!mobileOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setMobileOpen(false);
-    };
-    document.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
-  }, [mobileOpen]);
+  // The drawer is a modal overlay, so it gets the same Escape / focus-trap /
+  // scroll-lock behaviour as Dialog — a keyboard or screen-reader user
+  // otherwise has no way to close it short of following a nav link.
+  useModal(mobileOpen, drawerRef, () => setMobileOpen(false), drawerCloseRef);
 
   async function handleLogout() {
     await signOut({ redirect: false });
@@ -168,72 +110,128 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-screen bg-paper">
+      <a href="#main" className="skip-link">
+        Skip to content
+      </a>
+
       {/* Sidebar — desktop */}
-      <aside className="hidden w-60 flex-col border-r border-rule bg-surface md:flex" data-print="hide">
-        <SidebarContent items={items} pathname={pathname} />
+      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-rule bg-surface md:flex" data-print="hide">
+        <SidebarContent
+          items={items}
+          pathname={pathname}
+          name={name}
+          role={role}
+          onSignOut={handleLogout}
+          showBook={isPatient}
+        />
       </aside>
 
-      {/* Sidebar — mobile drawer */}
-      {mobileOpen && (
+      {/* Sidebar — mobile drawer (non-patient roles) */}
+      {mobileOpen && !isPatient && (
         <div className="fixed inset-0 z-40 md:hidden" data-print="hide">
-          <div className="absolute inset-0 bg-ink-900/40" onClick={() => setMobileOpen(false)} aria-hidden="true" />
+          <div className="animate-fade absolute inset-0 bg-ink-900/50" onClick={() => setMobileOpen(false)} aria-hidden="true" />
           <aside
+            ref={drawerRef}
             role="dialog"
             aria-modal="true"
             aria-label="Navigation"
-            className="relative flex h-full w-64 flex-col bg-surface"
+            className="animate-drawer relative flex h-full w-72 max-w-[85vw] flex-col bg-surface shadow-[var(--shadow-float)]"
           >
             <SidebarContent
               items={items}
               pathname={pathname}
+              name={name}
+              role={role}
+              onSignOut={handleLogout}
               onNavigate={() => setMobileOpen(false)}
+              closeRef={drawerCloseRef}
               onClose={() => setMobileOpen(false)}
             />
           </aside>
         </div>
       )}
 
-      <div className="flex min-h-screen flex-1 flex-col">
+      <div className="flex min-h-screen min-w-0 flex-1 flex-col">
         <header
-          className="flex h-14 items-center justify-between border-b border-rule bg-surface px-4 md:px-6"
+          className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b border-rule bg-paper/85 px-4 backdrop-blur-md md:px-8"
           data-print="hide"
         >
-          <button
-            onClick={() => setMobileOpen(true)}
-            aria-label="Open navigation"
-            className="rounded-md p-2 text-ink-700 hover:bg-ink-900/5 md:hidden"
-          >
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-              <path d="M3 5.5h14M3 10h14M3 14.5h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
-          </button>
-
-          <div className="flex items-center gap-2 md:hidden">
-            <span className="text-sm font-semibold text-ink-900">MediCare+</span>
-          </div>
-
-          <div className="ml-auto flex items-center gap-3">
-            <NotificationBell />
-            <div className="hidden items-center gap-2 border-l border-rule pl-3 sm:flex">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-700 text-xs font-semibold text-white">
-                {initials(session?.user?.name)}
-              </div>
-              <div className="leading-tight">
-                <p className="text-sm font-medium text-ink-900">{session?.user?.name ?? "—"}</p>
-                <p className="text-xs text-ink-500">{role.charAt(0) + role.slice(1).toLowerCase()}</p>
-              </div>
-            </div>
+          {!isPatient && (
             <button
-              onClick={handleLogout}
-              className="rounded-md px-3 py-1.5 text-sm font-medium text-ink-700 hover:bg-ink-900/5"
+              type="button"
+              onClick={() => setMobileOpen(true)}
+              aria-label="Open navigation"
+              aria-expanded={mobileOpen}
+              className="-ml-2 flex h-11 w-11 items-center justify-center rounded-md text-ink-700 transition-colors hover:bg-ink-900/5 md:hidden"
             >
-              Sign out
+              <MenuIcon className="h-5 w-5" />
             </button>
+          )}
+
+          {/* Phones: brand. Desktop: where you are. */}
+          <Link href={isPatient ? "/dashboard/user" : items[0].href} aria-label="MediCare+ home" className="flex items-center gap-2.5 md:hidden">
+            <LogoMark />
+            <span className="text-[0.9375rem] font-semibold tracking-tight text-ink-900">MediCare+</span>
+          </Link>
+          <p className="hidden text-sm font-medium text-ink-500 md:block" aria-hidden="true">
+            {titleFor(pathname, items)}
+          </p>
+
+          <div className="ml-auto flex items-center gap-1.5">
+            {isPatient && !isActive(pathname, "/appointment") && (
+              <ButtonLink href="/appointment" size="sm" className="mr-1 hidden md:inline-flex">
+                <PlusIcon className="h-4 w-4" />
+                Book appointment
+              </ButtonLink>
+            )}
+            <NotificationBell />
+            <div className="md:hidden">
+              <UserMenu name={name} roleLabel={roleLabel(role)} onSignOut={handleLogout} />
+            </div>
           </div>
         </header>
 
-        <main className="flex-1 p-4 md:p-6">{children}</main>
+        <main
+          id="main"
+          tabIndex={-1}
+          className={`mx-auto w-full max-w-7xl flex-1 px-4 pt-5 focus:outline-none md:px-8 md:pt-8 ${
+            isPatient ? "pb-28 md:pb-10" : "pb-10"
+          }`}
+        >
+          <div className="page-enter">{children}</div>
+        </main>
       </div>
+
+      {/* Bottom tab bar — patients on phones */}
+      {isPatient && (
+        <nav
+          aria-label="Primary"
+          className="pb-safe fixed inset-x-0 bottom-0 z-30 border-t border-rule bg-surface/95 backdrop-blur-md md:hidden"
+          data-print="hide"
+        >
+          <ul className="mx-auto grid max-w-md grid-cols-5">
+            {[...NAV.PATIENT, PROFILE_ITEM].map((item) => {
+              const active = isActive(pathname, item.href);
+              const Icon = item.icon;
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    aria-current={active ? "page" : undefined}
+                    className={`relative flex min-h-16 flex-col items-center justify-center gap-1 px-1 text-[0.6875rem] font-medium transition-colors ${
+                      active ? "text-accent-700" : "text-ink-500 hover:text-ink-900"
+                    }`}
+                  >
+                    {active && <span aria-hidden="true" className="absolute inset-x-5 top-0 h-0.5 rounded-b-full bg-accent-700" />}
+                    <Icon className="h-[22px] w-[22px]" />
+                    <span className="max-w-full truncate">{item.label === "Book appointment" ? "Book" : item.label}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+      )}
     </div>
   );
 }
@@ -241,60 +239,101 @@ export function AppShell({ children }: { children: ReactNode }) {
 function SidebarContent({
   items,
   pathname,
+  name,
+  role,
+  onSignOut,
   onNavigate,
   onClose,
+  closeRef,
+  showBook = false,
 }: {
   items: NavItem[];
   pathname: string | null;
+  name: string | null | undefined;
+  role: Role;
+  onSignOut: () => void;
   onNavigate?: () => void;
   onClose?: () => void;
+  closeRef?: RefObject<HTMLButtonElement | null>;
+  showBook?: boolean;
 }) {
+  const profileActive = isActive(pathname, PROFILE_ITEM.href);
   return (
     <>
-      <div className="flex h-14 items-center gap-2 border-b border-rule px-4">
-        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-accent-700 text-xs font-bold text-white">
-          M+
-        </div>
-        <span className="text-sm font-semibold text-ink-900">MediCare+</span>
+      <div className="flex h-16 shrink-0 items-center gap-2.5 border-b border-rule px-5">
+        <Link href={items[0].href} onClick={onNavigate} aria-label="MediCare+ home" className="flex items-center gap-2.5">
+          <LogoMark />
+          <span className="text-[0.9375rem] font-semibold tracking-tight text-ink-900">MediCare+</span>
+        </Link>
         {onClose && (
           <button
+            ref={closeRef}
+            type="button"
             onClick={onClose}
             aria-label="Close navigation"
-            className="ml-auto rounded-md p-1.5 text-ink-500 hover:bg-ink-900/5 hover:text-ink-900"
+            className="-mr-2 ml-auto flex h-11 w-11 items-center justify-center rounded-md text-ink-500 transition-colors hover:bg-ink-900/5 hover:text-ink-900"
           >
-            <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-              <path d="M4 4L14 14M14 4L4 14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-            </svg>
+            <CloseIcon className="h-[18px] w-[18px]" />
           </button>
         )}
       </div>
-      <nav className="flex-1 space-y-0.5 p-3">
-        {items.map((item) => {
-          const active = pathname === item.href || (pathname?.startsWith(item.href + "/") ?? false);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={onNavigate}
-              className={`flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                active ? "bg-accent-050 text-accent-700" : "text-ink-700 hover:bg-ink-900/5"
-              }`}
-            >
-              {item.icon}
-              {item.label}
-            </Link>
-          );
-        })}
+
+      <nav aria-label="Main" className="flex-1 space-y-1 overflow-y-auto p-3">
+        {showBook && (
+          <ButtonLink href="/appointment" className="mb-3 w-full" onClick={onNavigate}>
+            <PlusIcon className="h-4 w-4" />
+            Book appointment
+          </ButtonLink>
+        )}
+        {items
+          .filter((item) => !(showBook && item.href === "/appointment"))
+          .map((item) => {
+            const active = isActive(pathname, item.href);
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={onNavigate}
+                aria-current={active ? "page" : undefined}
+                className={`relative flex min-h-11 items-center gap-3 rounded-md px-3 text-sm font-medium transition-colors ${
+                  active ? "bg-accent-050 text-accent-700" : "text-ink-700 hover:bg-ink-900/5 hover:text-ink-900"
+                }`}
+              >
+                {active && <span aria-hidden="true" className="absolute inset-y-2 left-0 w-0.5 rounded-full bg-accent-700" />}
+                <Icon className="h-[18px] w-[18px]" />
+                {item.label}
+                {item.href === "/emergency" && (
+                  <span aria-hidden="true" className="ml-auto h-1.5 w-1.5 rounded-full bg-[var(--color-signal-stop)]" />
+                )}
+              </Link>
+            );
+          })}
       </nav>
-      <div className="border-t border-rule p-3">
+
+      <div className="shrink-0 border-t border-rule p-3">
         <Link
-          href="/dashboard/profile"
+          href={PROFILE_ITEM.href}
           onClick={onNavigate}
-          className="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium text-ink-700 hover:bg-ink-900/5"
+          aria-current={profileActive ? "page" : undefined}
+          className={`flex min-h-12 items-center gap-3 rounded-md px-3 transition-colors ${
+            profileActive ? "bg-accent-050" : "hover:bg-ink-900/5"
+          }`}
         >
-          <Icon path={ICONS.profile} />
-          My profile
+          <Avatar name={name} tone="brand" size="sm" />
+          <span className="min-w-0 leading-tight">
+            <span className="block truncate text-sm font-medium text-ink-900">{name ?? "My profile"}</span>
+            <span className="block text-xs text-ink-500">{roleLabel(role)}</span>
+          </span>
         </Link>
+        <button
+          type="button"
+          onClick={onSignOut}
+          className="mt-1 flex min-h-11 w-full items-center gap-3 rounded-md px-3 text-sm font-medium text-ink-700 transition-colors hover:bg-ink-900/5 hover:text-ink-900"
+        >
+          <LogOutIcon className="h-[18px] w-[18px]" />
+          Sign out
+        </button>
       </div>
     </>
   );
