@@ -218,11 +218,18 @@ interface TextAreaFieldProps extends TextareaHTMLAttributes<HTMLTextAreaElement>
   error?: string;
   hint?: string;
   optional?: boolean;
+  fieldSize?: FieldSize;
+}
+
+/// A textarea is as tall as its rows, not as tall as a single-line control, so
+/// the fixed control height is dropped rather than overridden with h-auto.
+function textAreaClasses(size: FieldSize): string {
+  return CONTROL_CLASSES[size].replace(/\bh-1[01]\b/, "");
 }
 
 export const TextAreaField = forwardRef<HTMLTextAreaElement, TextAreaFieldProps>(
   function TextAreaField(
-    { label, error, hint, optional, id, className = "", "aria-describedby": extraDescribedBy, ...rest },
+    { label, error, hint, optional, fieldSize = "md", id, className = "", "aria-describedby": extraDescribedBy, ...rest },
     ref,
   ) {
     const fieldId = id ?? defaultId(label);
@@ -235,14 +242,14 @@ export const TextAreaField = forwardRef<HTMLTextAreaElement, TextAreaFieldProps>
         hint={hint}
         messageId={messageId}
         optional={optional}
-        size="md"
+        size={fieldSize}
       >
         <textarea
           ref={ref}
           id={fieldId}
           aria-invalid={Boolean(error)}
           aria-describedby={describedBy(Boolean(error || hint) && messageId, extraDescribedBy)}
-          className={`${CONTROL_CLASSES.md} h-auto min-h-24 resize-y py-2 ${error ? ERROR_CLASSES.md : ""} ${className}`}
+          className={`${textAreaClasses(fieldSize)} min-h-24 w-full resize-y py-2.5 ${error ? ERROR_CLASSES[fieldSize] : ""} ${className}`}
           {...rest}
         />
       </FieldShell>

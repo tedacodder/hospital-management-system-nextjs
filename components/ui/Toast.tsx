@@ -25,14 +25,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={{ push }}>
       {children}
       <div
-        className="pointer-events-none fixed bottom-4 right-4 z-[100] flex flex-col gap-2"
+        className="pointer-events-none fixed inset-x-4 bottom-20 z-[100] flex flex-col items-stretch gap-2 md:inset-x-auto md:bottom-4 md:right-4 md:items-end"
         role="status"
         aria-live="polite"
       >
         {toasts.map((t) => (
           <div
             key={t.id}
-            className={`pointer-events-auto rounded-md border px-4 py-2.5 text-sm shadow-md ${
+            role={t.tone === "error" ? "alert" : undefined}
+            className={`animate-pop pointer-events-auto max-w-sm rounded-lg border px-4 py-3 text-sm font-medium shadow-[var(--shadow-float)] ${
               t.tone === "error"
                 ? "border-[var(--color-signal-stop)]/20 bg-[var(--color-signal-stop-bg)] text-[var(--color-signal-stop)]"
                 : "border-[var(--color-signal-ok)]/20 bg-[var(--color-signal-ok-bg)] text-[var(--color-signal-ok)]"

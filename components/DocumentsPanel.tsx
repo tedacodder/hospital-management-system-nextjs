@@ -1,10 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState, type DragEvent } from "react";
 import { Button } from "@/components/ui/Button";
-import { EmptyState, LoadingRows } from "@/components/ui/Card";
+import { EmptyState, ErrorState } from "@/components/ui/Card";
+import { FileIcon, TrashIcon, UploadIcon } from "@/components/ui/Icons";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
-import { apiGet, apiSend, ApiError } from "@/lib/api-client";
+import { ApiError, apiGet, apiSend } from "@/lib/api-client";
+import { formatDate, friendlyError } from "@/lib/patient-ui";
+import { useApiResource } from "@/lib/use-api-resource";
 
 type Attachment = {
   id: number;
@@ -24,6 +28,13 @@ function formatSize(bytes: number): string {
 
 const ACCEPTED = "application/pdf,image/png,image/jpeg,image/webp";
 
+const TYPE_LABEL: Record<string, string> = {
+  "application/pdf": "PDF",
+  "image/png": "PNG",
+  "image/jpeg": "JPG",
+  "image/webp": "WEBP",
+};
+
 /// Shown on both the patient's own dashboard and the doctor/staff view of a
 /// patient's chart. Upload is allowed wherever this is rendered — the API
 /// enforces exactly who that can be (assertCanAccessPatient), so this
@@ -40,18 +51,12 @@ export function DocumentsPanel({
   canManageAny?: boolean;
 }) {
   const { push } = useToast();
-  const [items, setItems] = useState<Attachment[] | null>(null);
+  const files = useApiResource<Attachment[]>(`/patients/${patientId}/attachments`);
   const [uploading, setUploading] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const [confirmId, setConfirmId] = useState<number | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
-
-  function load() {
-    apiGet<Attachment[]>(`/patients/${patientId}/attachments`)
-      .then(setItems)
-      .catch(() => setItems([]));
-  }
-
-  useEffect(load, [patientId]);
 
   async function handleFileChosen(file: File) {
     setUploading(true);
@@ -63,12 +68,14 @@ export function DocumentsPanel({
         credentials: "include",
         body: form,
       });
-      const json = await res.json();
+      const json = await res.json().catch(() => null);
       if (!res.ok) throw new ApiError(json?.error?.message ?? "Upload failed", res.status);
       push(`${file.name} uploaded.`);
-      load();
+      // Quiet refresh: the list stays on screen while the new file is fetched.
+      const next = await apiGet<Attachment[]>(`/patients/${patientId}/attachments`);
+      files.setData(next);
     } catch (err) {
-      push(err instanceof ApiError ? err.message : "Couldn't upload that file.", "error");
+      push(friendlyError(err, "Couldn't upload that file. Please try again."), "error");
     } finally {
       setUploading(false);
       if (fileInput.current) fileInput.current.value = "";
@@ -79,64 +86,119 @@ export function DocumentsPanel({
     setDeletingId(id);
     try {
       await apiSend("DELETE", `/attachments/${id}`);
-      setItems((prev) => prev?.filter((a) => a.id !== id) ?? null);
+      files.setData((prev) => prev?.filter((a) => a.id !== id) ?? null);
+      setConfirmId(null);
     } catch (err) {
-      push(err instanceof ApiError ? err.message : "Couldn't delete that file.", "error");
+      push(friendlyError(err, "Couldn't delete that file. Please try again."), "error");
     } finally {
       setDeletingId(null);
     }
   }
 
+  function onDrop(e: DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    setDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file && !uploading) handleFileChosen(file);
+  }
+
+  const items = files.data;
+
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-medium text-ink-700">Documents</p>
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="text-base font-semibold text-ink-900">Documents</h3>
         <input
           ref={fileInput}
           type="file"
           accept={ACCEPTED}
           className="hidden"
+          aria-label="Choose a file to upload"
+          tabIndex={-1}
           onChange={(e) => {
             const file = e.target.files?.[0];
             if (file) handleFileChosen(file);
           }}
         />
         <Button size="sm" variant="secondary" loading={uploading} onClick={() => fileInput.current?.click()}>
-          Upload
+          <UploadIcon className="h-4 w-4" />
+          {uploading ? "Uploading…" : "Upload"}
         </Button>
       </div>
 
-      {items === null ? (
-        <LoadingRows rows={2} />
-      ) : items.length === 0 ? (
-        <EmptyState title="No documents yet" body="PDF, PNG, JPEG, or WebP, up to 15 MB." />
-      ) : (
-        <ul className="divide-y divide-rule rounded-md border border-rule">
-          {items.map((a) => (
-            <li key={a.id} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
-              <a
-                href={`/api/attachments/${a.id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="min-w-0 flex-1 truncate font-medium text-accent-700 hover:underline"
-              >
-                {a.filename}
-              </a>
-              <span className="shrink-0 text-xs text-ink-500">{formatSize(a.sizeBytes)}</span>
-              <span className="shrink-0 text-xs text-ink-500">{new Date(a.createdAt).toLocaleDateString()}</span>
-              {(canManageAny || a.uploadedBy?.id === myUserId) && (
-                <button
-                  onClick={() => handleDelete(a.id)}
-                  disabled={deletingId === a.id}
-                  className="shrink-0 text-xs font-medium text-[var(--color-signal-stop)] hover:underline disabled:opacity-50"
-                >
-                  Delete
-                </button>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
+      <div
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragging(true);
+        }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={onDrop}
+        className={`rounded-lg transition-colors ${dragging ? "bg-accent-050 ring-2 ring-accent-600 ring-offset-2" : ""}`}
+      >
+        {files.error ? (
+          <ErrorState message="We couldn't load the documents." onRetry={files.reload} />
+        ) : items === null ? (
+          <div className="space-y-2" role="status" aria-label="Loading documents" aria-busy="true">
+            <Skeleton className="h-14" />
+            <Skeleton className="h-14" />
+          </div>
+        ) : items.length === 0 ? (
+          <EmptyState
+            icon={<FileIcon />}
+            title="No documents yet"
+            body="Upload or drop a PDF, PNG, JPEG or WebP file, up to 15 MB."
+          />
+        ) : (
+          <ul className="divide-y divide-rule overflow-hidden rounded-lg border border-rule">
+            {items.map((a) => {
+              const canDelete = canManageAny || a.uploadedBy?.id === myUserId;
+              const confirming = confirmId === a.id;
+              return (
+                <li key={a.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 bg-surface px-3.5 py-3 sm:flex-nowrap">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-accent-050 font-mono text-[0.625rem] font-semibold text-accent-700">
+                    {TYPE_LABEL[a.mimeType] ?? "FILE"}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <a
+                      href={`/api/attachments/${a.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block truncate text-sm font-medium text-ink-900 underline-offset-4 hover:text-accent-700 hover:underline"
+                    >
+                      {a.filename}
+                      <span className="sr-only"> (opens in a new tab)</span>
+                    </a>
+                    <p className="truncate text-xs text-ink-500">
+                      {formatSize(a.sizeBytes)} · {formatDate(a.createdAt)}
+                      {a.uploadedBy?.name ? ` · ${a.uploadedBy.name}` : ""}
+                    </p>
+                  </div>
+                  {canDelete &&
+                    (confirming ? (
+                      <div className="flex shrink-0 items-center gap-1.5" role="group" aria-label={`Delete ${a.filename}?`}>
+                        <Button size="sm" variant="danger" loading={deletingId === a.id} onClick={() => handleDelete(a.id)}>
+                          Delete
+                        </Button>
+                        <Button size="sm" variant="ghost" disabled={deletingId === a.id} onClick={() => setConfirmId(null)}>
+                          Keep
+                        </Button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setConfirmId(a.id)}
+                        aria-label={`Delete ${a.filename}`}
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-ink-500 transition-colors hover:bg-[var(--color-signal-stop-bg)] hover:text-[var(--color-signal-stop)]"
+                      >
+                        <TrashIcon className="h-[18px] w-[18px]" />
+                      </button>
+                    ))}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }
