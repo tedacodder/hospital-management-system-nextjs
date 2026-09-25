@@ -49,9 +49,12 @@ export const GET = route(async (req: Request) => {
   const where: Prisma.AppointmentWhereInput = {
     ...scope,
     ...(status ? { status } : {}),
-    // Explicit filters may only narrow the scope, never widen it.
+    // Explicit filters may only narrow the scope, never widen it. A doctor's
+    // scope is already their own doctorId (see scopeFor above), so letting
+    // them additionally narrow by patientId — e.g. "this patient's visits
+    // with me" on a chart page — cannot leak another doctor's appointments.
     ...(doctorId && isStaff(session.user.role) ? { doctorId } : {}),
-    ...(patientId && isStaff(session.user.role) ? { patientId } : {}),
+    ...(patientId && (isStaff(session.user.role) || session.user.role === Role.DOCTOR) ? { patientId } : {}),
     ...(from || to
       ? { date: { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) } }
       : {}),

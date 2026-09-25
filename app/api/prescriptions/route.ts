@@ -2,7 +2,7 @@ import { NotificationType, Prisma, Role } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { buildMeta, created, ok, parseBody, parseQuery, route, HttpError } from "@/lib/api";
 import { assertCanAccessPatient, isStaff, requireOwnDoctor, requireSession } from "@/lib/auth";
-import { createPrescriptionSchema, paginationSchema } from "@/lib/validation";
+import { createPrescriptionSchema, prescriptionQuerySchema } from "@/lib/validation";
 import { recordAudit } from "@/lib/audit";
 import { notify } from "@/lib/notify";
 
@@ -14,7 +14,7 @@ const INCLUDE = {
 
 export const GET = route(async (req: Request) => {
   const session = await requireSession();
-  const { page, pageSize } = parseQuery(req, paginationSchema);
+  const { page, pageSize, patientId } = parseQuery(req, prescriptionQuerySchema);
 
   let where: Prisma.PrescriptionWhereInput = {};
   if (session.user.role === Role.PATIENT) {
@@ -26,6 +26,13 @@ export const GET = route(async (req: Request) => {
   } else if (session.user.role === Role.DOCTOR) {
     const doctor = await requireOwnDoctor(session);
     where = { doctorId: doctor.id };
+  }
+
+  // A patientId filter may only narrow an already-scoped query (a doctor's
+  // own prescriptions, filtered to one patient's chart) or, for staff, scope
+  // an otherwise-unscoped query to one patient.
+  if (patientId && (isStaff(session.user.role) || session.user.role === Role.DOCTOR)) {
+    where = { ...where, patientId };
   }
 
   const [prescriptions, total] = await Promise.all([

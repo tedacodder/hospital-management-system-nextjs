@@ -224,6 +224,10 @@ export const updatePrescriptionSchema = z.object({
   status: z.nativeEnum(PrescriptionStatus),
 });
 
+export const prescriptionQuerySchema = paginationSchema.extend({
+  patientId: idSchema.optional(),
+});
+
 // ─────────────────────────── Billing ───────────────────────────
 
 export const invoiceItemSchema = z.object({
