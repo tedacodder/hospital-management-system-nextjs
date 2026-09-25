@@ -13,6 +13,7 @@ import {
   BuildingIcon,
   CalendarIcon,
   CloseIcon,
+  ClockIcon,
   EmergencyIcon,
   HomeIcon,
   LogOutIcon,
@@ -46,6 +47,8 @@ const NAV: Record<Role, NavItem[]> = {
   ],
   DOCTOR: [
     { label: "Overview", href: "/dashboard/doc", icon: HomeIcon },
+    { label: "Patients", href: "/dashboard/doc/patients", icon: UsersIcon },
+    { label: "Availability", href: "/dashboard/doc/availability", icon: ClockIcon },
     { label: "Messages", href: "/dashboard/messages", icon: MessageIcon },
   ],
   STAFF: [
