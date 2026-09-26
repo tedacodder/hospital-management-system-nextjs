@@ -6,7 +6,7 @@ export function LogoMark({ tone = "light", className = "" }: { tone?: "light" | 
     <span
       aria-hidden="true"
       className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[0.8125rem] font-bold tracking-tight shadow-[inset_0_1px_0_rgb(255_255_255/0.2)] ${
-        tone === "dark" ? "bg-accent-400 text-ink-900" : "bg-accent-700 text-white"
+        tone === "dark" ? "bg-accent-400 text-panel" : "bg-accent-700 text-white"
       } ${className}`}
     >
       M+

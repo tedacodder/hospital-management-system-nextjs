@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { AuthBrandPanel, AUTH_COPY, type AuthVariant } from "@/components/auth/AuthBrandPanel";
 import { Logo } from "@/components/brand/Logo";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { ArrowLeftIcon } from "@/components/ui/Icons";
 
 // Shared frame for /login and /signup. Rendered from each route's layout.tsx,
@@ -30,7 +31,7 @@ export function AuthShell({
 
       <div className="relative flex min-h-screen flex-col overflow-x-clip lg:min-h-0">
         {/* Compact brand band — below lg only */}
-        <header className="relative overflow-hidden bg-ink-900 px-5 pb-20 pt-5 text-white sm:px-8 lg:hidden">
+        <header className="relative overflow-hidden bg-panel px-5 pb-20 pt-5 text-white sm:px-8 lg:hidden">
           <div aria-hidden="true" className="pointer-events-none absolute inset-0">
             <div className="bg-grid-dark absolute inset-0" />
             <div className="glow-accent-dark absolute -right-24 -top-32 h-80 w-80" />
@@ -43,13 +44,16 @@ export function AuthShell({
             >
               <Logo tone="dark" />
             </Link>
-            <Link
-              href="/"
-              className="inline-flex min-h-11 items-center gap-1.5 rounded-md px-2 text-sm font-medium text-white/75 transition-colors hover:text-white"
-            >
-              <ArrowLeftIcon className="h-4 w-4" />
-              Home
-            </Link>
+            <div className="flex items-center gap-1">
+              <ThemeToggle tone="onDark" />
+              <Link
+                href="/"
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-md px-2 text-sm font-medium text-white/75 transition-colors hover:text-white"
+              >
+                <ArrowLeftIcon className="h-4 w-4" />
+                Home
+              </Link>
+            </div>
           </div>
           <p className="relative mx-auto mt-6 max-w-[34rem] text-xl font-semibold leading-snug tracking-[-0.02em] sm:text-2xl">
             {copy.title}
@@ -65,6 +69,7 @@ export function AuthShell({
             <ArrowLeftIcon className="h-4 w-4" />
             Back to home
           </Link>
+          <ThemeToggle />
         </div>
 
         <main className="page-enter relative -mt-12 flex flex-1 flex-col justify-start px-4 pb-12 sm:px-8 lg:mt-0 lg:justify-center lg:px-10 lg:py-10 xl:px-16">

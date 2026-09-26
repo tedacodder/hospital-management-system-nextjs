@@ -19,7 +19,7 @@ export function PasswordChecklist({ password, id }: { password: string; id: stri
             className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors duration-150 ${
               r.met
                 ? "border-[var(--color-signal-ok)] bg-[var(--color-signal-ok)] text-white"
-                : "border-control bg-white"
+                : "border-control bg-surface"
             }`}
           >
             {r.met && <CheckIcon className="h-2.5 w-2.5" strokeWidth={2.4} />}

@@ -6,6 +6,7 @@ import { signOut, useSession } from "next-auth/react";
 import { useRef, useState, type ComponentType, type ReactNode, type RefObject, type SVGProps } from "react";
 import { LogoMark } from "@/components/brand/Logo";
 import { NotificationBell } from "@/components/NotificationBell";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { UserMenu } from "@/components/shell/UserMenu";
 import { Avatar } from "@/components/ui/Avatar";
 import { ButtonLink } from "@/components/ui/ButtonLink";
@@ -76,11 +77,20 @@ function isActive(pathname: string | null, href: string) {
   return pathname === href || (pathname?.startsWith(href + "/") ?? false);
 }
 
+/// Several nav hrefs can match the same pathname when one is a prefix of
+/// another (/dashboard/doc is a prefix of /dashboard/doc/patients) — this
+/// picks the single longest (most specific) match so exactly one row is
+/// ever "active" instead of a parent item staying lit on every subpage.
+function bestMatchHref(pathname: string | null, items: NavItem[]): string | null {
+  const match = [...items].sort((a, b) => b.href.length - a.href.length).find((i) => isActive(pathname, i.href));
+  return match?.href ?? null;
+}
+
 /// The current section's name for the header, from the longest matching nav
 /// entry (so /dashboard/admin/patients reads "Patients", not "Overview").
 function titleFor(pathname: string | null, items: NavItem[]): string {
   if (isActive(pathname, PROFILE_ITEM.href)) return "My profile";
-  const match = [...items].sort((a, b) => b.href.length - a.href.length).find((i) => isActive(pathname, i.href));
+  const match = items.find((i) => i.href === bestMatchHref(pathname, items));
   return match?.label ?? "";
 }
 
@@ -132,7 +142,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* Sidebar — mobile drawer (non-patient roles) */}
       {mobileOpen && !isPatient && (
         <div className="fixed inset-0 z-40 md:hidden" data-print="hide">
-          <div className="animate-fade absolute inset-0 bg-ink-900/50" onClick={() => setMobileOpen(false)} aria-hidden="true" />
+          <div className="animate-fade absolute inset-0 bg-scrim" onClick={() => setMobileOpen(false)} aria-hidden="true" />
           <aside
             ref={drawerRef}
             role="dialog"
@@ -188,6 +198,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               </ButtonLink>
             )}
             <NotificationBell />
+            <ThemeToggle />
             <div className="md:hidden">
               <UserMenu name={name} roleLabel={roleLabel(role)} onSignOut={handleLogout} />
             </div>
@@ -213,25 +224,29 @@ export function AppShell({ children }: { children: ReactNode }) {
           data-print="hide"
         >
           <ul className="mx-auto grid max-w-md grid-cols-5">
-            {[...NAV.PATIENT, PROFILE_ITEM].map((item) => {
-              const active = isActive(pathname, item.href);
-              const Icon = item.icon;
-              return (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    aria-current={active ? "page" : undefined}
-                    className={`relative flex min-h-16 flex-col items-center justify-center gap-1 px-1 text-[0.6875rem] font-medium transition-colors ${
-                      active ? "text-accent-700" : "text-ink-500 hover:text-ink-900"
-                    }`}
-                  >
-                    {active && <span aria-hidden="true" className="absolute inset-x-5 top-0 h-0.5 rounded-b-full bg-accent-700" />}
-                    <Icon className="h-[22px] w-[22px]" />
-                    <span className="max-w-full truncate">{item.label === "Book appointment" ? "Book" : item.label}</span>
-                  </Link>
-                </li>
-              );
-            })}
+            {(() => {
+              const tabItems = [...NAV.PATIENT, PROFILE_ITEM];
+              const activeHref = bestMatchHref(pathname, tabItems);
+              return tabItems.map((item) => {
+                const active = item.href === activeHref;
+                const Icon = item.icon;
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      aria-current={active ? "page" : undefined}
+                      className={`relative flex min-h-16 flex-col items-center justify-center gap-1 px-1 text-[0.6875rem] font-medium transition-colors ${
+                        active ? "text-accent-700" : "text-ink-500 hover:text-ink-900"
+                      }`}
+                    >
+                      {active && <span aria-hidden="true" className="absolute inset-x-5 top-0 h-0.5 rounded-b-full bg-accent-700" />}
+                      <Icon className="h-[22px] w-[22px]" />
+                      <span className="max-w-full truncate">{item.label === "Book appointment" ? "Book" : item.label}</span>
+                    </Link>
+                  </li>
+                );
+              });
+            })()}
           </ul>
         </nav>
       )}
@@ -261,6 +276,7 @@ function SidebarContent({
   showBook?: boolean;
 }) {
   const profileActive = isActive(pathname, PROFILE_ITEM.href);
+  const activeItemHref = profileActive ? null : bestMatchHref(pathname, items);
   return (
     <>
       <div className="flex h-16 shrink-0 items-center gap-2.5 border-b border-rule px-5">
@@ -291,7 +307,7 @@ function SidebarContent({
         {items
           .filter((item) => !(showBook && item.href === "/appointment"))
           .map((item) => {
-            const active = isActive(pathname, item.href);
+            const active = item.href === activeItemHref;
             const Icon = item.icon;
             return (
               <Link

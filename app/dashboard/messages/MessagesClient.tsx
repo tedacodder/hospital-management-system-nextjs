@@ -376,7 +376,7 @@ export default function MessagesClient() {
                       }
                     }}
                     placeholder="Write a message"
-                    className="max-h-32 min-h-11 flex-1 resize-none rounded-lg border border-control bg-white px-3.5 py-2.5 text-[1rem] leading-snug text-ink-900 placeholder:text-ink-500 transition-[border-color,box-shadow] hover:border-ink-500 focus-visible:border-accent-600 focus-visible:shadow-[0_0_0_4px_rgb(26_145_135/0.16)]"
+                    className="max-h-32 min-h-11 flex-1 resize-none rounded-lg border border-control bg-surface px-3.5 py-2.5 text-[1rem] leading-snug text-ink-900 placeholder:text-ink-500 transition-[border-color,box-shadow] hover:border-ink-500 focus-visible:border-accent-600 focus-visible:shadow-[0_0_0_4px_rgb(26_145_135/0.16)]"
                   />
                   <Button size="touch" loading={sending} disabled={!draft.trim()} onClick={handleSend}>
                     <SendIcon className="h-[18px] w-[18px]" />

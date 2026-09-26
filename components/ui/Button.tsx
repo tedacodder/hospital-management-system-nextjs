@@ -7,12 +7,13 @@ const VARIANT_CLASSES: Record<ButtonVariant, string> = {
   primary:
     "bg-accent-700 text-white hover:bg-accent-600 disabled:bg-ink-300",
   secondary:
-    "bg-white text-ink-900 border border-rule-strong hover:bg-paper disabled:text-ink-300",
+    "bg-surface text-ink-900 border border-rule-strong hover:bg-paper disabled:text-ink-300",
   danger:
-    "bg-white text-[var(--color-signal-stop)] border border-[var(--color-signal-stop)]/30 hover:bg-[var(--color-signal-stop-bg)] disabled:opacity-50",
+    "bg-surface text-[var(--color-signal-stop)] border border-[var(--color-signal-stop)]/30 hover:bg-[var(--color-signal-stop-bg)] disabled:opacity-50",
   ghost: "text-ink-700 hover:bg-ink-900/5 disabled:text-ink-300",
-  // For dark surfaces (brand panel, closing call-to-action).
-  light: "bg-white text-ink-900 hover:bg-accent-050 disabled:opacity-60",
+  // For dark surfaces (brand panel, closing call-to-action). Fixed white/dark
+  // regardless of site theme, to match the panel it always sits on.
+  light: "bg-white text-panel hover:bg-panel-hover disabled:opacity-60",
   outlineLight: "border border-white/30 text-white hover:bg-white/10 disabled:opacity-60",
 };
 

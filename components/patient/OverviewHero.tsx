@@ -30,7 +30,7 @@ export function OverviewHero({
   const doctorName = next?.doctor?.user.name ?? null;
 
   return (
-    <section aria-labelledby="overview-heading" className="relative overflow-hidden rounded-xl bg-ink-900 text-white">
+    <section aria-labelledby="overview-heading" className="relative overflow-hidden rounded-xl bg-panel text-white">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0">
         <div className="bg-grid-dark absolute inset-0" />
         <div className="glow-accent-dark absolute -left-24 -top-32 h-[26rem] w-[26rem]" />
@@ -62,7 +62,7 @@ export function OverviewHero({
         </div>
 
         {next && parts ? (
-          <div className="rounded-xl border border-white/10 bg-ink-800/80 p-4 shadow-[0_24px_48px_-16px_rgb(0_0_0/0.5)] sm:p-5">
+          <div className="rounded-xl border border-white/10 bg-panel-raised/80 p-4 shadow-[0_24px_48px_-16px_rgb(0_0_0/0.5)] sm:p-5">
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm font-medium text-white/70">Next appointment</p>
               <AppointmentStatusBadge status={next.status} />
@@ -70,7 +70,7 @@ export function OverviewHero({
             <div className="mt-4 flex gap-4">
               <div
                 aria-hidden="true"
-                className="flex h-[4.5rem] w-16 shrink-0 flex-col items-center justify-center rounded-lg bg-white text-ink-900"
+                className="flex h-[4.5rem] w-16 shrink-0 flex-col items-center justify-center rounded-lg bg-white text-panel"
               >
                 <span className="font-mono text-[0.625rem] font-medium uppercase tracking-wider text-accent-700">
                   {parts.weekday}

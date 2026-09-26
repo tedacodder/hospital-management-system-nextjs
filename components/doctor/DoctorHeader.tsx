@@ -40,7 +40,7 @@ export function DoctorHeader({
   const heading = `${greetingFor(new Date().getHours())}${who ? `, Dr. ${who}` : ""}`;
 
   return (
-    <section aria-labelledby="doctor-overview-heading" className="relative overflow-hidden rounded-xl bg-ink-900 text-white">
+    <section aria-labelledby="doctor-overview-heading" className="relative overflow-hidden rounded-xl bg-panel text-white">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0">
         <div className="bg-grid-dark absolute inset-0" />
         <div className="glow-accent-dark absolute -right-24 -top-32 h-[24rem] w-[24rem]" />

@@ -43,7 +43,7 @@ export function Security() {
   return (
     <section id="security" aria-labelledby="security-heading" className="scroll-mt-20">
       <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-28">
-        <div className="relative overflow-hidden rounded-xl bg-ink-900 px-6 py-12 sm:px-10 sm:py-14 lg:px-14 lg:py-16">
+        <div className="relative overflow-hidden rounded-xl bg-panel px-6 py-12 sm:px-10 sm:py-14 lg:px-14 lg:py-16">
           <div aria-hidden="true" className="pointer-events-none absolute inset-0">
             <div className="bg-grid-dark absolute inset-0" />
             <div className="glow-accent-dark absolute -left-24 -top-24 h-[28rem] w-[28rem]" />

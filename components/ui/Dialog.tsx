@@ -29,7 +29,7 @@ export function Dialog({
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
-      <div className="animate-fade absolute inset-0 bg-ink-900/50" onClick={() => onCloseRef.current()} aria-hidden="true" />
+      <div className="animate-fade absolute inset-0 bg-scrim" onClick={() => onCloseRef.current()} aria-hidden="true" />
       <div
         ref={panelRef}
         role="dialog"
