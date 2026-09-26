@@ -11,7 +11,13 @@ import { Dialog } from "@/components/ui/Dialog";
 import { SelectField, TextField } from "@/components/ui/Field";
 import { Pagination } from "@/components/ui/Pagination";
 import { useToast } from "@/components/ui/Toast";
-import { apiGet, apiGetPaged, apiSend, ApiError, type ApiMeta } from "@/lib/api-client";
+import {
+  apiGet,
+  apiGetPaged,
+  apiSend,
+  ApiError,
+  type ApiMeta,
+} from "@/lib/api-client";
 
 type UserRow = {
   id: number;
@@ -25,7 +31,12 @@ type UserRow = {
 
 type Department = { id: number; name: string };
 
-const ROLE_TONE = { ADMIN: "stop", STAFF: "info", DOCTOR: "ok", PATIENT: "neutral" } as const;
+const ROLE_TONE = {
+  ADMIN: "stop",
+  STAFF: "info",
+  DOCTOR: "ok",
+  PATIENT: "neutral",
+} as const;
 
 export default function AdminUsersClient() {
   const { status } = useSession();
@@ -70,7 +81,9 @@ export default function AdminUsersClient() {
 
   useEffect(() => {
     if (status !== "authenticated") return;
-    apiGet<Department[]>("/departments").then(setDepartments).catch(() => {});
+    apiGet<Department[]>("/departments")
+      .then(setDepartments)
+      .catch(() => {});
   }, [status]);
 
   async function handleCreate() {
@@ -80,11 +93,22 @@ export default function AdminUsersClient() {
     try {
       await apiSend("POST", "/users", {
         ...form,
+        specialization:
+          form.role === "DOCTOR" && form.specialization
+            ? form.specialization
+            : undefined,
         departmentId: form.departmentId ? Number(form.departmentId) : undefined,
       });
       push(`Account created for ${form.name}.`);
       setFormOpen(false);
-      setForm({ name: "", email: "", password: "", role: "STAFF", specialization: "", departmentId: "" });
+      setForm({
+        name: "",
+        email: "",
+        password: "",
+        role: "STAFF",
+        specialization: "",
+        departmentId: "",
+      });
       load();
     } catch (err) {
       if (err instanceof ApiError) {
@@ -109,8 +133,8 @@ export default function AdminUsersClient() {
         </Button>
       </div>
       <p className="mt-1 text-sm text-ink-500">
-        This is the only place a Doctor, Staff, or Admin account can be created — public signup always
-        creates a Patient.
+        This is the only place a Doctor, Staff, or Admin account can be created
+        — public signup always creates a Patient.
       </p>
 
       <div className="mt-4">
@@ -140,10 +164,14 @@ export default function AdminUsersClient() {
                         <Badge tone={ROLE_TONE[u.role]}>{u.role}</Badge>
                       </td>
                       <td className="px-4 py-3 text-ink-500">
-                        {u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString() : "Never"}
+                        {u.lastLoginAt
+                          ? new Date(u.lastLoginAt).toLocaleString()
+                          : "Never"}
                       </td>
                       <td className="px-4 py-3">
-                        <Badge tone={u.isActive ? "ok" : "neutral"}>{u.isActive ? "Active" : "Disabled"}</Badge>
+                        <Badge tone={u.isActive ? "ok" : "neutral"}>
+                          {u.isActive ? "Active" : "Disabled"}
+                        </Badge>
                       </td>
                     </tr>
                   ))}
@@ -155,7 +183,11 @@ export default function AdminUsersClient() {
         )}
       </div>
 
-      <Dialog open={formOpen} onClose={() => setFormOpen(false)} title="Create account">
+      <Dialog
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+        title="Create account"
+      >
         <div className="flex flex-col gap-4">
           <TextField
             label="Full name"
@@ -178,7 +210,13 @@ export default function AdminUsersClient() {
             onChange={(e) => setForm({ ...form, password: e.target.value })}
             error={errorFields.password?.[0]}
           />
-          <SelectField label="Role" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as UserRow["role"] })}>
+          <SelectField
+            label="Role"
+            value={form.role}
+            onChange={(e) =>
+              setForm({ ...form, role: e.target.value as UserRow["role"] })
+            }
+          >
             <option value="STAFF">Staff</option>
             <option value="DOCTOR">Doctor</option>
             <option value="ADMIN">Admin</option>
@@ -189,12 +227,16 @@ export default function AdminUsersClient() {
               <TextField
                 label="Specialization"
                 value={form.specialization}
-                onChange={(e) => setForm({ ...form, specialization: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, specialization: e.target.value })
+                }
               />
               <SelectField
                 label="Department"
                 value={form.departmentId}
-                onChange={(e) => setForm({ ...form, departmentId: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, departmentId: e.target.value })
+                }
               >
                 <option value="">No department</option>
                 {departments.map((d) => (

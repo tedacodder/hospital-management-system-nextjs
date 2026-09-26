@@ -88,8 +88,11 @@ export const changePasswordSchema = z
 /// Admin-only user creation. This is the only path that may set a role.
 export const adminCreateUserSchema = registerSchema.extend({
   role: z.nativeEnum(Role),
-  specialization: z.string().trim().min(2).max(120).optional(),
-  departmentId: idSchema.optional(),
+  specialization: z.string().trim().min(2).max(120).optional().or(z.literal("")),
+  departmentId: z.preprocess(
+    (v) => (v === "" || v === null ? undefined : v),
+    idSchema.optional()
+  ),
 });
 
 export const updateProfileSchema = z.object({

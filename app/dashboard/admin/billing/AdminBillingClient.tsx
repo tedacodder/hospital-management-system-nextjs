@@ -9,7 +9,13 @@ import { Dialog } from "@/components/ui/Dialog";
 import { SelectField, TextField } from "@/components/ui/Field";
 import { Pagination } from "@/components/ui/Pagination";
 import { useToast } from "@/components/ui/Toast";
-import { apiGet, apiGetPaged, apiSend, ApiError, type ApiMeta } from "@/lib/api-client";
+import {
+  apiGet,
+  apiGetPaged,
+  apiSend,
+  ApiError,
+  type ApiMeta,
+} from "@/lib/api-client";
 
 type Invoice = {
   id: number;
@@ -22,11 +28,19 @@ type Invoice = {
   payments: { id: number; amount: string }[];
 };
 
-type PatientOption = { id: number; mrn: string | null; user: { name: string | null } };
+type PatientOption = {
+  id: number;
+  mrn: string | null;
+  user: { name: string | null };
+};
 
 type Line = { description: string; quantity: string; unitPrice: string };
 
-const emptyLine = (): Line => ({ description: "", quantity: "1", unitPrice: "" });
+const emptyLine = (): Line => ({
+  description: "",
+  quantity: "1",
+  unitPrice: "",
+});
 
 export default function AdminBillingClient() {
   const { push } = useToast();
@@ -51,7 +65,9 @@ export default function AdminBillingClient() {
   }, [page]);
 
   useEffect(() => {
-    apiGet<PatientOption[]>("/patients", { pageSize: 200 }).then(setPatients).catch(() => {});
+    apiGet<PatientOption[]>("/patients", { pageSize: 100 })
+      .then(setPatients)
+      .catch(() => {});
   }, []);
 
   function outstanding(inv: Invoice): number {
@@ -72,7 +88,10 @@ export default function AdminBillingClient() {
         {invoices === null ? (
           <LoadingRows rows={6} />
         ) : invoices.length === 0 ? (
-          <EmptyState title="No invoices yet" body="Create the first invoice above." />
+          <EmptyState
+            title="No invoices yet"
+            body="Create the first invoice above."
+          />
         ) : (
           <Card padded={false} className="overflow-hidden">
             <div className="overflow-x-auto">
@@ -93,17 +112,30 @@ export default function AdminBillingClient() {
                     const owed = outstanding(inv);
                     return (
                       <tr key={inv.id}>
-                        <td className="px-4 py-3 font-mono text-ink-900">{inv.number}</td>
-                        <td className="px-4 py-3 text-ink-900">{inv.patient.user.name}</td>
-                        <td className="px-4 py-3 text-ink-500">{new Date(inv.issuedAt).toLocaleDateString()}</td>
-                        <td className="px-4 py-3 font-mono text-ink-900">{inv.total}</td>
-                        <td className="px-4 py-3 font-mono text-ink-700">{owed.toFixed(2)}</td>
+                        <td className="px-4 py-3 font-mono text-ink-900">
+                          {inv.number}
+                        </td>
+                        <td className="px-4 py-3 text-ink-900">
+                          {inv.patient.user.name}
+                        </td>
+                        <td className="px-4 py-3 text-ink-500">
+                          {new Date(inv.issuedAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-4 py-3 font-mono text-ink-900">
+                          {inv.total}
+                        </td>
+                        <td className="px-4 py-3 font-mono text-ink-700">
+                          {owed.toFixed(2)}
+                        </td>
                         <td className="px-4 py-3">
                           <InvoiceStatusBadge status={inv.status} />
                         </td>
                         <td className="px-4 py-3 text-right">
                           {owed > 0 && (
-                            <button onClick={() => setPayFor(inv)} className="text-xs font-medium text-accent-700 hover:underline">
+                            <button
+                              onClick={() => setPayFor(inv)}
+                              className="text-xs font-medium text-accent-700 hover:underline"
+                            >
                               Record payment
                             </button>
                           )}
@@ -165,7 +197,10 @@ function CreateInvoiceDialog({
   const [error, setError] = useState<string | null>(null);
 
   const total =
-    lines.reduce((s, l) => s + (Number(l.quantity) || 0) * (Number(l.unitPrice) || 0), 0) -
+    lines.reduce(
+      (s, l) => s + (Number(l.quantity) || 0) * (Number(l.unitPrice) || 0),
+      0,
+    ) -
     (Number(discount) || 0) +
     (Number(tax) || 0);
 
@@ -181,7 +216,11 @@ function CreateInvoiceDialog({
   async function handleCreate() {
     const items = lines
       .filter((l) => l.description.trim() && l.unitPrice)
-      .map((l) => ({ description: l.description, quantity: Number(l.quantity) || 1, unitPrice: Number(l.unitPrice) }));
+      .map((l) => ({
+        description: l.description,
+        quantity: Number(l.quantity) || 1,
+        unitPrice: Number(l.unitPrice),
+      }));
 
     if (!patientId || items.length === 0) {
       setError("Choose a patient and add at least one line item.");
@@ -202,7 +241,9 @@ function CreateInvoiceDialog({
       onCreated();
       onClose();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't create the invoice.");
+      setError(
+        err instanceof ApiError ? err.message : "Couldn't create the invoice.",
+      );
     } finally {
       setSaving(false);
     }
@@ -211,7 +252,11 @@ function CreateInvoiceDialog({
   return (
     <Dialog open={open} onClose={onClose} title="New invoice">
       <div className="flex flex-col gap-4">
-        <SelectField label="Patient" value={patientId} onChange={(e) => setPatientId(e.target.value)}>
+        <SelectField
+          label="Patient"
+          value={patientId}
+          onChange={(e) => setPatientId(e.target.value)}
+        >
           <option value="">Select a patient</option>
           {patients.map((p) => (
             <option key={p.id} value={p.id}>
@@ -265,9 +310,24 @@ function CreateInvoiceDialog({
         </div>
 
         <div className="grid grid-cols-3 gap-3">
-          <TextField label="Discount" inputMode="decimal" value={discount} onChange={(e) => setDiscount(e.target.value)} />
-          <TextField label="Tax" inputMode="decimal" value={tax} onChange={(e) => setTax(e.target.value)} />
-          <TextField label="Due date" type="date" value={dueAt} onChange={(e) => setDueAt(e.target.value)} />
+          <TextField
+            label="Discount"
+            inputMode="decimal"
+            value={discount}
+            onChange={(e) => setDiscount(e.target.value)}
+          />
+          <TextField
+            label="Tax"
+            inputMode="decimal"
+            value={tax}
+            onChange={(e) => setTax(e.target.value)}
+          />
+          <TextField
+            label="Due date"
+            type="date"
+            value={dueAt}
+            onChange={(e) => setDueAt(e.target.value)}
+          />
         </div>
 
         <p className="text-right text-sm font-medium text-ink-900">
@@ -324,7 +384,9 @@ function RecordPaymentDialog({
       });
       onRecorded();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't record that payment.");
+      setError(
+        err instanceof ApiError ? err.message : "Couldn't record that payment.",
+      );
     } finally {
       setSaving(false);
     }
@@ -334,17 +396,33 @@ function RecordPaymentDialog({
     <Dialog open onClose={onClose} title={`Record payment — ${invoice.number}`}>
       <div className="flex flex-col gap-4">
         <p className="text-sm text-ink-500">
-          Outstanding balance: <span className="font-mono font-medium text-ink-900">{outstanding.toFixed(2)}</span>
+          Outstanding balance:{" "}
+          <span className="font-mono font-medium text-ink-900">
+            {outstanding.toFixed(2)}
+          </span>
         </p>
-        <TextField label="Amount" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />
-        <SelectField label="Method" value={method} onChange={(e) => setMethod(e.target.value)}>
+        <TextField
+          label="Amount"
+          inputMode="decimal"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+        />
+        <SelectField
+          label="Method"
+          value={method}
+          onChange={(e) => setMethod(e.target.value)}
+        >
           <option value="CASH">Cash</option>
           <option value="CARD">Card</option>
           <option value="BANK_TRANSFER">Bank transfer</option>
           <option value="MOBILE_MONEY">Mobile money</option>
           <option value="INSURANCE">Insurance</option>
         </SelectField>
-        <TextField label="Reference (optional)" value={reference} onChange={(e) => setReference(e.target.value)} />
+        <TextField
+          label="Reference (optional)"
+          value={reference}
+          onChange={(e) => setReference(e.target.value)}
+        />
 
         {error && (
           <p
