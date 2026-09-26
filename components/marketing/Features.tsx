@@ -49,7 +49,7 @@ function Tile({
 }
 
 const slot = "flex h-7 items-center justify-center rounded-sm border font-mono text-xs";
-const open = `${slot} border-rule-strong bg-white text-ink-900`;
+const open = `${slot} border-rule-strong bg-surface text-ink-900`;
 const taken = `${slot} border-transparent bg-ink-900/[0.04] text-ink-300 line-through`;
 
 function AppointmentsVisual() {
@@ -141,7 +141,7 @@ function BillingVisual() {
           <span className="font-mono tabular-nums">1,200.00</span>
         </div>
       </div>
-      <div className="rounded-md border border-rule bg-white p-3">
+      <div className="rounded-md border border-rule bg-surface p-3">
         <p className="text-[0.6875rem] font-medium uppercase tracking-wider text-ink-500">Payments</p>
         <div className="mt-2 flex justify-between font-mono text-xs tabular-nums text-ink-700">
           <span>Recorded</span>
@@ -177,7 +177,7 @@ function PeopleVisual() {
 function MessagingVisual() {
   return (
     <div className="space-y-2">
-      <p className="max-w-[85%] rounded-md rounded-bl-none bg-white px-2.5 py-1.5 text-xs text-ink-700 shadow-[0_0_0_1px_var(--color-rule)]">
+      <p className="max-w-[85%] rounded-md rounded-bl-none bg-surface px-2.5 py-1.5 text-xs text-ink-700 shadow-[0_0_0_1px_var(--color-rule)]">
         Is it fine to take this with food?
       </p>
       <p className="ml-auto max-w-[85%] rounded-md rounded-br-none bg-accent-700 px-2.5 py-1.5 text-xs text-white">

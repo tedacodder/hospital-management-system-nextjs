@@ -16,7 +16,7 @@ export function Hero() {
       <div className="mx-auto grid max-w-7xl items-center gap-14 px-5 pb-16 pt-12 sm:px-8 sm:pt-16 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:gap-12 lg:pb-28 lg:pt-24">
         <div>
           <p
-            className="animate-rise inline-flex items-center gap-2 rounded-md border border-rule-strong bg-white/70 px-2.5 py-1 font-mono text-[0.6875rem] uppercase tracking-wider text-ink-700"
+            className="animate-rise inline-flex items-center gap-2 rounded-md border border-rule-strong bg-surface/70 px-2.5 py-1 font-mono text-[0.6875rem] uppercase tracking-wider text-ink-700"
             style={delay(0)}
           >
             <span className="h-1.5 w-1.5 rounded-full bg-accent-500" aria-hidden="true" />

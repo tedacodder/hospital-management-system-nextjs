@@ -3,6 +3,7 @@ import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import type { ReactNode } from "react";
 import "./globals.css";
 import { Providers } from "./providers";
+import { THEME_INIT_SCRIPT } from "@/components/theme/ThemeProvider";
 
 // globals.css has always named IBM Plex as the product typeface, but nothing
 // loaded it, so every screen fell back to the system font. next/font fetches
@@ -31,7 +32,12 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`${plexSans.variable} ${plexMono.variable}`}>
+    <html lang="en" className={`${plexSans.variable} ${plexMono.variable}`} suppressHydrationWarning>
+      <head>
+        {/* Paints the right theme before hydration so the page never flashes
+            light-then-dark (or the reverse) on load. See ThemeProvider. */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
       <body className="min-h-screen bg-paper font-sans text-ink-900 antialiased">
         <Providers>{children}</Providers>
       </body>

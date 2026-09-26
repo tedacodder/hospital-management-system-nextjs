@@ -36,7 +36,7 @@ function TimelineCard() {
     { icon: <ReceiptIcon />, title: "Invoice", meta: "INV-2026-000031 · ETB 1,200.00", badge: <Badge tone="ok">Paid</Badge> },
   ];
   return (
-    <div className="rounded-xl border border-white/10 bg-ink-800/80 p-5 shadow-[0_24px_48px_-16px_rgb(0_0_0/0.5)] backdrop-blur-sm">
+    <div className="rounded-xl border border-white/10 bg-panel-raised/80 p-5 shadow-[0_24px_48px_-16px_rgb(0_0_0/0.5)] backdrop-blur-sm">
       <div className="flex items-center justify-between">
         <p className="text-sm font-medium text-white">Care timeline</p>
         <span className="font-mono text-[0.6875rem] uppercase tracking-wider text-white/45">Sample data</span>
@@ -72,7 +72,7 @@ function RecordCard() {
     { icon: <PaperclipIcon />, title: "Documents", body: "PDF, PNG, JPEG or WebP up to 15 MB" },
   ];
   return (
-    <div className="rounded-xl border border-white/10 bg-ink-800/80 p-5 shadow-[0_24px_48px_-16px_rgb(0_0_0/0.5)] backdrop-blur-sm">
+    <div className="rounded-xl border border-white/10 bg-panel-raised/80 p-5 shadow-[0_24px_48px_-16px_rgb(0_0_0/0.5)] backdrop-blur-sm">
       <div className="flex items-center gap-3 border-b border-white/10 pb-4">
         <span className="flex h-10 w-10 items-center justify-center rounded-md bg-white/10 text-white/70">
           <IdCardIcon className="h-5 w-5" />
@@ -104,7 +104,7 @@ function RecordCard() {
 export function AuthBrandPanel({ variant }: { variant: AuthVariant }) {
   const copy = AUTH_COPY[variant];
   return (
-    <aside className="relative hidden overflow-hidden bg-ink-900 text-white lg:flex lg:flex-col lg:justify-between lg:px-12 lg:py-10 xl:px-16">
+    <aside className="relative hidden overflow-hidden bg-panel text-white lg:flex lg:flex-col lg:justify-between lg:px-12 lg:py-10 xl:px-16">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0">
         <div className="bg-grid-dark absolute inset-0" />
         <div className="glow-accent-dark absolute -left-32 -top-32 h-[34rem] w-[34rem]" />

@@ -133,7 +133,7 @@ function DoctorOption({
         <span
           aria-hidden="true"
           className={`mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors ${
-            selected ? "border-accent-700 bg-accent-700 text-white" : "border-control bg-white"
+            selected ? "border-accent-700 bg-accent-700 text-white" : "border-control bg-surface"
           }`}
         >
           {selected && <CheckIcon className="h-3 w-3" strokeWidth={2.6} />}
@@ -302,7 +302,7 @@ export default function AppointmentPageClient() {
                             className={`h-9 whitespace-nowrap rounded-full border px-3.5 text-sm font-medium transition-colors ${
                               active
                                 ? "border-accent-700 bg-accent-700 text-white"
-                                : "border-rule-strong bg-white text-ink-700 hover:border-ink-500"
+                                : "border-rule-strong bg-surface text-ink-700 hover:border-ink-500"
                             }`}
                           >
                             {d.name}
@@ -356,7 +356,7 @@ export default function AppointmentPageClient() {
                             onChange={() => setDay(c.value)}
                             className="peer sr-only"
                           />
-                          <span className="flex w-[4.25rem] cursor-pointer flex-col items-center rounded-lg border border-rule-strong bg-white py-2 transition-colors hover:border-ink-500 peer-checked:border-accent-700 peer-checked:bg-accent-700 peer-checked:text-white peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent-600">
+                          <span className="flex w-[4.25rem] cursor-pointer flex-col items-center rounded-lg border border-rule-strong bg-surface py-2 transition-colors hover:border-ink-500 peer-checked:border-accent-700 peer-checked:bg-accent-700 peer-checked:text-white peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent-600">
                             <span className="text-xs font-medium opacity-80">{c.weekday}</span>
                             <span className="font-mono text-sm font-semibold tabular-nums">{c.date}</span>
                           </span>
@@ -374,7 +374,7 @@ export default function AppointmentPageClient() {
                       min={todayString()}
                       value={day}
                       onChange={(e) => e.target.value && setDay(e.target.value)}
-                      className="h-11 rounded-lg border border-control bg-white px-3 text-[1rem] text-ink-900 transition-[border-color,box-shadow] hover:border-ink-500 focus-visible:border-accent-600 focus-visible:shadow-[0_0_0_4px_rgb(26_145_135/0.16)]"
+                      className="h-11 rounded-lg border border-control bg-surface px-3 text-[1rem] text-ink-900 transition-[border-color,box-shadow] hover:border-ink-500 focus-visible:border-accent-600 focus-visible:shadow-[0_0_0_4px_rgb(26_145_135/0.16)]"
                     />
                   </div>
                 </fieldset>
@@ -408,7 +408,7 @@ export default function AppointmentPageClient() {
                             onChange={() => setSelectedSlot(s.start)}
                             className="peer sr-only"
                           />
-                          <span className="flex h-11 cursor-pointer items-center justify-center rounded-lg border border-rule-strong bg-white font-mono text-sm tabular-nums text-ink-900 transition-colors hover:border-accent-600 peer-checked:border-accent-700 peer-checked:bg-accent-700 peer-checked:text-white peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent-600 peer-disabled:cursor-not-allowed peer-disabled:border-rule peer-disabled:bg-paper peer-disabled:text-ink-300 peer-disabled:line-through peer-disabled:hover:border-rule">
+                          <span className="flex h-11 cursor-pointer items-center justify-center rounded-lg border border-rule-strong bg-surface font-mono text-sm tabular-nums text-ink-900 transition-colors hover:border-accent-600 peer-checked:border-accent-700 peer-checked:bg-accent-700 peer-checked:text-white peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent-600 peer-disabled:cursor-not-allowed peer-disabled:border-rule peer-disabled:bg-paper peer-disabled:text-ink-300 peer-disabled:line-through peer-disabled:hover:border-rule">
                             {new Date(s.start).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
                             {!s.available && <span className="sr-only"> (unavailable)</span>}
                           </span>

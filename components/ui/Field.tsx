@@ -61,8 +61,8 @@ function FieldShell({
 }
 
 const CONTROL_CLASSES: Record<FieldSize, string> = {
-  md: "h-10 rounded-md border border-rule-strong bg-white px-3 text-sm text-ink-900 placeholder:text-ink-300 focus-visible:border-accent-600 disabled:bg-paper disabled:text-ink-500",
-  lg: "h-11 w-full rounded-lg border border-control bg-white px-3.5 text-[1rem] text-ink-900 placeholder:text-ink-500 transition-[border-color,box-shadow] duration-150 hover:border-ink-500 focus-visible:border-accent-600 focus-visible:shadow-[0_0_0_4px_rgb(26_145_135/0.16)] disabled:bg-paper disabled:text-ink-500",
+  md: "h-10 rounded-md border border-rule-strong bg-surface px-3 text-sm text-ink-900 placeholder:text-ink-300 focus-visible:border-accent-600 disabled:bg-paper disabled:text-ink-500",
+  lg: "h-11 w-full rounded-lg border border-control bg-surface px-3.5 text-[1rem] text-ink-900 placeholder:text-ink-500 transition-[border-color,box-shadow] duration-150 hover:border-ink-500 focus-visible:border-accent-600 focus-visible:shadow-[0_0_0_4px_rgb(26_145_135/0.16)] disabled:bg-paper disabled:text-ink-500",
 };
 const ERROR_CLASSES: Record<FieldSize, string> = {
   md: "border-[var(--color-signal-stop)]",

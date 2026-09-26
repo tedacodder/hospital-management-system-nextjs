@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Logo } from "@/components/brand/Logo";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { MobileMenu, type NavLink } from "@/components/marketing/MobileMenu";
 
@@ -43,6 +44,7 @@ export function Navbar() {
         </nav>
 
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           <ButtonLink href="/login" variant="ghost">
             Sign in
           </ButtonLink>

@@ -28,7 +28,7 @@ function slotClass(state: Slot["state"]) {
     case "selected":
       return "border-accent-700 bg-accent-700 text-white shadow-[0_1px_2px_rgb(15_92_85/0.35)]";
     default:
-      return "border-rule-strong bg-white text-ink-900";
+      return "border-rule-strong bg-surface text-ink-900";
   }
 }
 

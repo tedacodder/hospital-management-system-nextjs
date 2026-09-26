@@ -117,7 +117,7 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
       {onRetry && (
         <button
           onClick={onRetry}
-          className="inline-flex h-9 items-center rounded-md border border-[var(--color-signal-stop)]/30 bg-white px-3.5 text-sm font-medium text-[var(--color-signal-stop)] transition-colors hover:bg-[var(--color-signal-stop-bg)]"
+          className="inline-flex h-9 items-center rounded-md border border-[var(--color-signal-stop)]/30 bg-surface px-3.5 text-sm font-medium text-[var(--color-signal-stop)] transition-colors hover:bg-[var(--color-signal-stop-bg)]"
         >
           Try again
         </button>

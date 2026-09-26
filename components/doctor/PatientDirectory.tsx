@@ -55,7 +55,7 @@ export function PatientDirectory() {
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search by name, MRN, email or phone"
           aria-label="Search patients"
-          className="h-10 w-full rounded-md border border-rule-strong bg-white pl-9 pr-3 text-sm text-ink-900 placeholder:text-ink-500 focus-visible:border-accent-600"
+          className="h-10 w-full rounded-md border border-rule-strong bg-surface pl-9 pr-3 text-sm text-ink-900 placeholder:text-ink-500 focus-visible:border-accent-600"
         />
       </div>
 

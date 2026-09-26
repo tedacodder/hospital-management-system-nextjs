@@ -41,6 +41,22 @@
   /* One step up from ink-900, for layered surfaces on the dark panels. */
   --color-ink-800: #15303a;
 
+  /* Fixed "brand panel" colours — the welcome header, the auth side panel,
+     the security section. These stay dark on purpose regardless of site
+     theme, so they're deliberately NOT part of the ink/paper scale that
+     flips under [data-theme="dark"] below; without this split, inverting
+     ink-900 for dark-mode text would turn these panels light too. */
+  --color-panel: #0d1f26;
+  --color-panel-raised: #15303a;
+  --color-panel-hover: #e8f3f1;
+  /* Modal/drawer backdrop. A scrim dims whatever's behind it in either
+     theme, so it stays fixed too rather than flipping with the page. */
+  --color-scrim: rgb(13 31 38 / 0.5);
+
+  /* Loading skeleton, as tokens so dark mode can swap the tint. */
+  --color-skeleton-base: rgb(13 31 38 / 0.06);
+  --color-skeleton-sheen: rgb(255 255 255 / 0.55);
+
   /* Clinical signal colours. These map to status, never to mood. */
   --color-signal-ok: #1f7a43;
   --color-signal-ok-bg: #e7f3ec;
@@ -79,10 +95,69 @@
   --shadow-card: 0 1px 2px rgb(13 31 38 / 0.05), 0 4px 16px -4px rgb(13 31 38 / 0.08);
 }
 
+/* ───────────────────────────── Dark mode ─────────────────────────────
+ *
+ * The same clinical-records direction carried into a dark palette, not a
+ * simple inversion: paper becomes a near-black petrol rather than pure
+ * black, ink becomes a warm off-white rather than pure white, and the
+ * accent is lifted a step (reusing the existing "safe on dark ink"
+ * accent-400/500) so interactive elements stay legible and still read as
+ * the same product. Toggled by data-theme on <html>; see ThemeProvider.
+ *
+ * The --color-panel* and --color-scrim tokens above are deliberately absent
+ * here — the always-dark brand panels and modal scrims stay exactly as they
+ * are in both themes.
+ */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --color-ink-900: #eef4f3;
+  --color-ink-700: #b9c8c9;
+  --color-ink-500: #82989b;
+  --color-ink-300: #4c6165;
+
+  --color-paper: #0a1316;
+  --color-surface: #101c20;
+  --color-rule: #1c2c30;
+  --color-rule-strong: #2c4247;
+  --color-control: #476166;
+
+  --color-accent-700: #1f8f83;
+  --color-accent-600: #2aa89b;
+  --color-accent-500: #3dbfae;
+  --color-accent-050: rgb(71 184 172 / 0.14);
+  /* accent-400 is unchanged: it was already tuned for dark surfaces. */
+
+  --color-signal-ok: #3ddc84;
+  --color-signal-ok-bg: rgb(61 220 132 / 0.12);
+  --color-signal-wait: #f2b544;
+  --color-signal-wait-bg: rgb(242 181 68 / 0.12);
+  --color-signal-stop: #ff6b6b;
+  --color-signal-stop-bg: rgb(255 107 107 / 0.12);
+  --color-signal-info: #6ba6f5;
+  --color-signal-info-bg: rgb(107 166 245 / 0.12);
+
+  --color-skeleton-base: rgb(255 255 255 / 0.07);
+  --color-skeleton-sheen: rgb(255 255 255 / 0.16);
+
+  /* A near-black page swallows the light-mode shadow entirely, so depth
+     comes from a soft black falloff plus a hairline top highlight instead —
+     the same trick a lot of glass/metal UI uses so raised surfaces still
+     read as raised against a dark background. */
+  --shadow-float: 0 1px 0 rgb(255 255 255 / 0.05) inset, 0 10px 28px -8px rgb(0 0 0 / 0.55),
+    0 28px 56px -16px rgb(0 0 0 / 0.5);
+  --shadow-card: 0 1px 0 rgb(255 255 255 / 0.04) inset, 0 6px 20px -6px rgb(0 0 0 / 0.4);
+}
+
 /* ───────────────────────────── Base ───────────────────────────── */
 
 html {
   -webkit-text-size-adjust: 100%;
+  color-scheme: light;
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 body {
@@ -275,8 +350,8 @@ h1, h2, h3, h4 {
 
 .skeleton {
   border-radius: var(--radius-md);
-  background-color: rgb(13 31 38 / 0.06);
-  background-image: linear-gradient(90deg, transparent 0%, rgb(255 255 255 / 0.55) 50%, transparent 100%);
+  background-color: var(--color-skeleton-base);
+  background-image: linear-gradient(90deg, transparent 0%, var(--color-skeleton-sheen) 50%, transparent 100%);
   background-size: 200% 100%;
   animation: shimmer 1.8s linear infinite;
 }
@@ -344,7 +419,7 @@ h1, h2, h3, h4 {
   top: -4rem;
   z-index: 100;
   border-radius: var(--radius-md);
-  background: var(--color-ink-900);
+  background: var(--color-panel);
   padding: 0.5rem 0.875rem;
   font-size: var(--text-sm);
   font-weight: 500;
@@ -369,6 +444,7 @@ html {
 @media print {
   body {
     background: #fff;
+    color: #0d1f26;
     font-size: 11pt;
   }
 

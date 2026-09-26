@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { AppShell } from "@/components/AppShell";
 import { Logo } from "@/components/brand/Logo";
 import { PageHeader } from "@/components/patient/PageHeader";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { buttonClasses } from "@/components/ui/Button";
 import { ArrowLeftIcon, CheckIcon, EmergencyIcon, PhoneIcon } from "@/components/ui/Icons";
 import { authOptions } from "@/lib/auth";
@@ -69,7 +70,7 @@ export default async function EmergencyPage() {
         role="note"
         className="flex gap-3.5 rounded-xl border border-[var(--color-signal-stop)]/25 bg-[var(--color-signal-stop-bg)] p-4 sm:p-5"
       >
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white text-[var(--color-signal-stop)]">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface text-[var(--color-signal-stop)]">
           <EmergencyIcon className="h-5 w-5" />
         </span>
         <div>
@@ -120,16 +121,23 @@ export default async function EmergencyPage() {
     <div className="min-h-screen bg-paper">
       <header className="border-b border-rule bg-surface">
         <div className="mx-auto flex h-16 max-w-3xl items-center justify-between px-5">
-          <Link href="/" aria-label="MediCare+ home" className="rounded-md">
-            <Logo />
-          </Link>
           <Link
             href="/"
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-md px-2 text-sm font-medium text-ink-500 transition-colors hover:text-ink-900"
+            aria-label="MediCare+ home"
+            className="rounded-md"
           >
-            <ArrowLeftIcon className="h-4 w-4" />
-            Home
+            <Logo />
           </Link>
+          <div className="flex items-center gap-1">
+            <ThemeToggle />
+            <Link
+              href="/"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-md px-2 text-sm font-medium text-ink-500 transition-colors hover:text-ink-900"
+            >
+              <ArrowLeftIcon className="h-4 w-4" />
+              Home
+            </Link>
+          </div>
         </div>
       </header>
       <main className="px-5 py-10 sm:py-14">{content}</main>
