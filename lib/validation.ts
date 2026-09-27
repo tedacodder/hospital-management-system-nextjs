@@ -231,6 +231,25 @@ export const prescriptionQuerySchema = paginationSchema.extend({
   patientId: idSchema.optional(),
 });
 
+// ─────────────────────────── Medications (openFDA reference) ───────────────────────────
+
+/// Backs the medication search box. `q` matches against brand name, generic
+/// name, and active-ingredient substance name; `manufacturer` narrows further.
+/// At least one term is required — an unscoped query against a public label
+/// database of this size is not a useful "browse everything" feature, and
+/// openFDA's own rate limits make it wasteful to try.
+export const medicationSearchSchema = z
+  .object({
+    q: z.string().trim().min(2, "Enter at least 2 characters").max(120, "Search term is too long").optional(),
+    manufacturer: z.string().trim().min(2, "Enter at least 2 characters").max(120, "Search term is too long").optional(),
+    page: z.coerce.number().int().min(1).max(500).default(1),
+    pageSize: z.coerce.number().int().min(1).max(25).default(10),
+  })
+  .refine((v) => Boolean(v.q || v.manufacturer), {
+    message: "Enter a medication name, ingredient, or manufacturer to search",
+    path: ["q"],
+  });
+
 // ─────────────────────────── Billing ───────────────────────────
 
 export const invoiceItemSchema = z.object({

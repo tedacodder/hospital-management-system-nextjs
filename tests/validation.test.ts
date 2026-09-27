@@ -3,6 +3,7 @@ import {
   availabilitySchema,
   changePasswordSchema,
   createAppointmentSchema,
+  medicationSearchSchema,
   passwordSchema,
   phoneSchema,
   registerSchema,
@@ -136,5 +137,41 @@ describe("changePasswordSchema", () => {
       confirmPassword: "Str0ngPassword",
     });
     expect(result.success).toBe(true);
+  });
+});
+
+describe("medicationSearchSchema", () => {
+  it("accepts a plain name search with defaults filled in", () => {
+    const result = medicationSearchSchema.safeParse({ q: "ibuprofen" });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toEqual({ q: "ibuprofen", page: 1, pageSize: 10 });
+    }
+  });
+
+  it("accepts a manufacturer-only search", () => {
+    expect(medicationSearchSchema.safeParse({ manufacturer: "Pfizer" }).success).toBe(true);
+  });
+
+  it("rejects an empty search with no name or manufacturer", () => {
+    const result = medicationSearchSchema.safeParse({});
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a search term that is only whitespace", () => {
+    const result = medicationSearchSchema.safeParse({ q: "   " });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a single-character search term", () => {
+    expect(medicationSearchSchema.safeParse({ q: "a" }).success).toBe(false);
+  });
+
+  it("rejects an excessively long search term", () => {
+    expect(medicationSearchSchema.safeParse({ q: "a".repeat(200) }).success).toBe(false);
+  });
+
+  it("caps pageSize at 25", () => {
+    expect(medicationSearchSchema.safeParse({ q: "ibuprofen", pageSize: 100 }).success).toBe(false);
   });
 });

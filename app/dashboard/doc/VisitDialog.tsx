@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { Dialog } from "@/components/ui/Dialog";
 import { DocumentsPanel } from "@/components/DocumentsPanel";
@@ -18,6 +18,12 @@ type Props = {
   appointmentId?: number;
   /// Shown in the dialog header for context when opened from today's schedule.
   appointmentContext?: string;
+  /// Set when this dialog was opened from the Medication & Drug Information
+  /// Center's "Reference in prescription" action. Pre-fills only the
+  /// medication name on the first line and turns on the prescription
+  /// section — dosage, frequency, and duration are always left for the
+  /// doctor to enter and verify, never populated from the drug label.
+  initialMedication?: string;
   onSaved: () => void;
 };
 
@@ -31,7 +37,16 @@ const emptyLine = (): MedLine => ({ medication: "", dosage: "", frequency: "", d
 /// clinical acts, even though they happen in one visit — and, when this visit
 /// is tied to a confirmed appointment, that appointment is marked completed
 /// once the note is saved, so it drops off today's open worklist on its own.
-export function VisitDialog({ open, onClose, patientId, patientName, appointmentId, appointmentContext, onSaved }: Props) {
+export function VisitDialog({
+  open,
+  onClose,
+  patientId,
+  patientName,
+  appointmentId,
+  appointmentContext,
+  initialMedication,
+  onSaved,
+}: Props) {
   const { push } = useToast();
   const { data: session } = useSession();
   const [diagnosis, setDiagnosis] = useState("");
@@ -43,6 +58,17 @@ export function VisitDialog({ open, onClose, patientId, patientName, appointment
   const [lines, setLines] = useState<MedLine[]>([emptyLine()]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Seeded once per open, not on every render: a doctor who clears the
+  // medication field manually shouldn't have it reappear while the dialog
+  // stays open.
+  useEffect(() => {
+    if (open && initialMedication) {
+      setIncludeRx(true);
+      setLines([{ ...emptyLine(), medication: initialMedication }]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, initialMedication]);
 
   function reset() {
     setDiagnosis("");
