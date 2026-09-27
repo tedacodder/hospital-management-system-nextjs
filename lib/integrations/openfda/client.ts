@@ -1,5 +1,5 @@
 import { setDefaultResultOrder } from "node:dns";
-import { Agent, setGlobalDispatcher } from "undici";
+import { Agent, buildConnector, setGlobalDispatcher } from "undici";
 import { HttpError } from "@/lib/api";
 import type { OpenFdaLabelResponse } from "./types";
 
@@ -11,8 +11,13 @@ import type { OpenFdaLabelResponse } from "./types";
 // global fetch dispatcher to open IPv4-only sockets skips the IPv6 attempt
 // entirely rather than just deprioritizing it.
 setDefaultResultOrder("ipv4first");
-setGlobalDispatcher(new Agent({ connect: { family: 4 } }));
-
+// undici@6's BuildOptions type incorrectly requires `port`, even though
+// buildConnector only builds a *connector function* — port is supplied
+// later, per request, when that function is actually invoked. This is a
+// known overreach in undici's own connector.d.ts, not a real runtime
+// requirement, so the cast below is safe.
+const ipv4Connector = buildConnector({ family: 4 } as buildConnector.BuildOptions);
+setGlobalDispatcher(new Agent({ connect: ipv4Connector }));
 // Thin wrapper around the public openFDA Drug Label API
 // (https://open.fda.gov/apis/drug/label/). No API key is required to use
 // this endpoint; OPENFDA_API_KEY is read only if the deployment has one,
