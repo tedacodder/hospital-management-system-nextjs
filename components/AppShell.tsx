@@ -3,7 +3,14 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { useRef, useState, type ComponentType, type ReactNode, type RefObject, type SVGProps } from "react";
+import {
+  useRef,
+  useState,
+  type ComponentType,
+  type ReactNode,
+  type RefObject,
+  type SVGProps,
+} from "react";
 import { LogoMark } from "@/components/brand/Logo";
 import { NotificationBell } from "@/components/NotificationBell";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
@@ -20,6 +27,7 @@ import {
   LogOutIcon,
   MenuIcon,
   MessageIcon,
+  PillIcon,
   PlusIcon,
   ReceiptIcon,
   StethoscopeIcon,
@@ -43,35 +51,79 @@ const NAV: Record<Role, NavItem[]> = {
   PATIENT: [
     { label: "Overview", href: "/dashboard/user", icon: HomeIcon },
     { label: "Book appointment", href: "/appointment", icon: CalendarIcon },
+    {
+      label: "Medications",
+      href: "/dashboard/user/medications",
+      icon: PillIcon,
+    },
     { label: "Messages", href: "/dashboard/messages", icon: MessageIcon },
     { label: "Emergency", href: "/emergency", icon: EmergencyIcon },
   ],
   DOCTOR: [
     { label: "Overview", href: "/dashboard/doc", icon: HomeIcon },
     { label: "Patients", href: "/dashboard/doc/patients", icon: UsersIcon },
-    { label: "Availability", href: "/dashboard/doc/availability", icon: ClockIcon },
+    {
+      label: "Medications",
+      href: "/dashboard/doc/medications",
+      icon: PillIcon,
+    },
+    {
+      label: "Availability",
+      href: "/dashboard/doc/availability",
+      icon: ClockIcon,
+    },
     { label: "Messages", href: "/dashboard/messages", icon: MessageIcon },
   ],
   STAFF: [
     { label: "Overview", href: "/dashboard/admin", icon: HomeIcon },
     { label: "Patients", href: "/dashboard/admin/patients", icon: UsersIcon },
-    { label: "Doctors", href: "/dashboard/admin/doctors", icon: StethoscopeIcon },
-    { label: "Departments", href: "/dashboard/admin/departments", icon: BuildingIcon },
+    {
+      label: "Doctors",
+      href: "/dashboard/admin/doctors",
+      icon: StethoscopeIcon,
+    },
+    {
+      label: "Departments",
+      href: "/dashboard/admin/departments",
+      icon: BuildingIcon,
+    },
+    {
+      label: "Medications",
+      href: "/dashboard/admin/medications",
+      icon: PillIcon,
+    },
     { label: "Billing", href: "/dashboard/admin/billing", icon: ReceiptIcon },
     { label: "Messages", href: "/dashboard/messages", icon: MessageIcon },
   ],
   ADMIN: [
     { label: "Overview", href: "/dashboard/admin", icon: HomeIcon },
     { label: "Patients", href: "/dashboard/admin/patients", icon: UsersIcon },
-    { label: "Doctors", href: "/dashboard/admin/doctors", icon: StethoscopeIcon },
-    { label: "Departments", href: "/dashboard/admin/departments", icon: BuildingIcon },
+    {
+      label: "Doctors",
+      href: "/dashboard/admin/doctors",
+      icon: StethoscopeIcon,
+    },
+    {
+      label: "Departments",
+      href: "/dashboard/admin/departments",
+      icon: BuildingIcon,
+    },
+    {
+      label: "Medications",
+      href: "/dashboard/admin/medications",
+      icon: PillIcon,
+    },
     { label: "Billing", href: "/dashboard/admin/billing", icon: ReceiptIcon },
     { label: "Users", href: "/dashboard/admin/users", icon: UsersIcon },
     { label: "Messages", href: "/dashboard/messages", icon: MessageIcon },
   ],
 };
 
-const PROFILE_ITEM: NavItem = { label: "Profile", href: "/dashboard/profile", icon: UserIcon };
+const PROFILE_ITEM: NavItem = {
+  label: "Profile",
+  href: "/dashboard/profile",
+  icon: UserIcon,
+};
 
 function isActive(pathname: string | null, href: string) {
   return pathname === href || (pathname?.startsWith(href + "/") ?? false);
@@ -81,8 +133,13 @@ function isActive(pathname: string | null, href: string) {
 /// another (/dashboard/doc is a prefix of /dashboard/doc/patients) — this
 /// picks the single longest (most specific) match so exactly one row is
 /// ever "active" instead of a parent item staying lit on every subpage.
-function bestMatchHref(pathname: string | null, items: NavItem[]): string | null {
-  const match = [...items].sort((a, b) => b.href.length - a.href.length).find((i) => isActive(pathname, i.href));
+function bestMatchHref(
+  pathname: string | null,
+  items: NavItem[],
+): string | null {
+  const match = [...items]
+    .sort((a, b) => b.href.length - a.href.length)
+    .find((i) => isActive(pathname, i.href));
   return match?.href ?? null;
 }
 
@@ -128,7 +185,10 @@ export function AppShell({ children }: { children: ReactNode }) {
       </a>
 
       {/* Sidebar — desktop */}
-      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-rule bg-surface md:flex" data-print="hide">
+      <aside
+        className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-rule bg-surface md:flex"
+        data-print="hide"
+      >
         <SidebarContent
           items={items}
           pathname={pathname}
@@ -142,7 +202,11 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* Sidebar — mobile drawer (non-patient roles) */}
       {mobileOpen && !isPatient && (
         <div className="fixed inset-0 z-40 md:hidden" data-print="hide">
-          <div className="animate-fade absolute inset-0 bg-scrim" onClick={() => setMobileOpen(false)} aria-hidden="true" />
+          <div
+            className="animate-fade absolute inset-0 bg-scrim"
+            onClick={() => setMobileOpen(false)}
+            aria-hidden="true"
+          />
           <aside
             ref={drawerRef}
             role="dialog"
@@ -181,18 +245,31 @@ export function AppShell({ children }: { children: ReactNode }) {
             </button>
           )}
 
-          {/* Phones: brand. Desktop: where you are. */}
-          <Link href={isPatient ? "/dashboard/user" : items[0].href} aria-label="MediCare+ home" className="flex items-center gap-2.5 md:hidden">
+          {/* Brand, shown at every width — matches the sidebar. */}
+          <Link
+            href={isPatient ? "/dashboard/user" : items[0].href}
+            aria-label="MediCare+ home"
+            className="flex items-center gap-2.5"
+          >
             <LogoMark />
-            <span className="text-[0.9375rem] font-semibold tracking-tight text-ink-900">MediCare+</span>
+            <span className="text-[0.9375rem] font-semibold tracking-tight text-ink-900">
+              MediCare+
+            </span>
           </Link>
-          <p className="hidden text-sm font-medium text-ink-500 md:block" aria-hidden="true">
+          <p
+            className="hidden text-sm font-medium text-ink-500 md:block"
+            aria-hidden="true"
+          >
             {titleFor(pathname, items)}
           </p>
 
           <div className="ml-auto flex items-center gap-1.5">
             {isPatient && !isActive(pathname, "/appointment") && (
-              <ButtonLink href="/appointment" size="sm" className="mr-1 hidden md:inline-flex">
+              <ButtonLink
+                href="/appointment"
+                size="sm"
+                className="mr-1 hidden md:inline-flex"
+              >
                 <PlusIcon className="h-4 w-4" />
                 Book appointment
               </ButtonLink>
@@ -200,7 +277,11 @@ export function AppShell({ children }: { children: ReactNode }) {
             <NotificationBell />
             <ThemeToggle />
             <div className="md:hidden">
-              <UserMenu name={name} roleLabel={roleLabel(role)} onSignOut={handleLogout} />
+              <UserMenu
+                name={name}
+                roleLabel={roleLabel(role)}
+                onSignOut={handleLogout}
+              />
             </div>
           </div>
         </header>
@@ -236,12 +317,23 @@ export function AppShell({ children }: { children: ReactNode }) {
                       href={item.href}
                       aria-current={active ? "page" : undefined}
                       className={`relative flex min-h-16 flex-col items-center justify-center gap-1 px-1 text-[0.6875rem] font-medium transition-colors ${
-                        active ? "text-accent-700" : "text-ink-500 hover:text-ink-900"
+                        active
+                          ? "text-accent-700"
+                          : "text-ink-500 hover:text-ink-900"
                       }`}
                     >
-                      {active && <span aria-hidden="true" className="absolute inset-x-5 top-0 h-0.5 rounded-b-full bg-accent-700" />}
+                      {active && (
+                        <span
+                          aria-hidden="true"
+                          className="absolute inset-x-5 top-0 h-0.5 rounded-b-full bg-accent-700"
+                        />
+                      )}
                       <Icon className="h-[22px] w-[22px]" />
-                      <span className="max-w-full truncate">{item.label === "Book appointment" ? "Book" : item.label}</span>
+                      <span className="max-w-full truncate">
+                        {item.label === "Book appointment"
+                          ? "Book"
+                          : item.label}
+                      </span>
                     </Link>
                   </li>
                 );
@@ -280,9 +372,16 @@ function SidebarContent({
   return (
     <>
       <div className="flex h-16 shrink-0 items-center gap-2.5 border-b border-rule px-5">
-        <Link href={items[0].href} onClick={onNavigate} aria-label="MediCare+ home" className="flex items-center gap-2.5">
+        <Link
+          href={items[0].href}
+          onClick={onNavigate}
+          aria-label="MediCare+ home"
+          className="flex items-center gap-2.5"
+        >
           <LogoMark />
-          <span className="text-[0.9375rem] font-semibold tracking-tight text-ink-900">MediCare+</span>
+          <span className="text-[0.9375rem] font-semibold tracking-tight text-ink-900">
+            MediCare+
+          </span>
         </Link>
         {onClose && (
           <button
@@ -299,7 +398,11 @@ function SidebarContent({
 
       <nav aria-label="Main" className="flex-1 space-y-1 overflow-y-auto p-3">
         {showBook && (
-          <ButtonLink href="/appointment" className="mb-3 w-full" onClick={onNavigate}>
+          <ButtonLink
+            href="/appointment"
+            className="mb-3 w-full"
+            onClick={onNavigate}
+          >
             <PlusIcon className="h-4 w-4" />
             Book appointment
           </ButtonLink>
@@ -316,14 +419,24 @@ function SidebarContent({
                 onClick={onNavigate}
                 aria-current={active ? "page" : undefined}
                 className={`relative flex min-h-11 items-center gap-3 rounded-md px-3 text-sm font-medium transition-colors ${
-                  active ? "bg-accent-050 text-accent-700" : "text-ink-700 hover:bg-ink-900/5 hover:text-ink-900"
+                  active
+                    ? "bg-accent-050 text-accent-700"
+                    : "text-ink-700 hover:bg-ink-900/5 hover:text-ink-900"
                 }`}
               >
-                {active && <span aria-hidden="true" className="absolute inset-y-2 left-0 w-0.5 rounded-full bg-accent-700" />}
+                {active && (
+                  <span
+                    aria-hidden="true"
+                    className="absolute inset-y-2 left-0 w-0.5 rounded-full bg-accent-700"
+                  />
+                )}
                 <Icon className="h-[18px] w-[18px]" />
                 {item.label}
                 {item.href === "/emergency" && (
-                  <span aria-hidden="true" className="ml-auto h-1.5 w-1.5 rounded-full bg-[var(--color-signal-stop)]" />
+                  <span
+                    aria-hidden="true"
+                    className="ml-auto h-1.5 w-1.5 rounded-full bg-[var(--color-signal-stop)]"
+                  />
                 )}
               </Link>
             );
@@ -341,8 +454,12 @@ function SidebarContent({
         >
           <Avatar name={name} tone="brand" size="sm" />
           <span className="min-w-0 leading-tight">
-            <span className="block truncate text-sm font-medium text-ink-900">{name ?? "My profile"}</span>
-            <span className="block text-xs text-ink-500">{roleLabel(role)}</span>
+            <span className="block truncate text-sm font-medium text-ink-900">
+              {name ?? "My profile"}
+            </span>
+            <span className="block text-xs text-ink-500">
+              {roleLabel(role)}
+            </span>
           </span>
         </Link>
         <button

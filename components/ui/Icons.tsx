@@ -301,3 +301,10 @@ export const TrashIcon = (p: IconProps) => (
     <path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l.8 12a1.5 1.5 0 0 0 1.5 1.4h6.4a1.5 1.5 0 0 0 1.5-1.4L17.5 7" />
   </Svg>
 );
+
+export const ExternalLinkIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M14 4.5h5.5V10M19.2 4.8l-8.4 8.4" />
+    <path d="M17 13.5v4.3a1.7 1.7 0 0 1-1.7 1.7H6.2A1.7 1.7 0 0 1 4.5 17.8V8.7A1.7 1.7 0 0 1 6.2 7h4.3" />
+  </Svg>
+);

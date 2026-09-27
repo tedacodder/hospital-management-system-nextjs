@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { AppShell } from "@/components/AppShell";
 import { DocumentsPanel } from "@/components/DocumentsPanel";
@@ -45,6 +45,8 @@ export default function PatientDetailClient() {
   const params = useParams<{ id: string }>();
   const patientId = Number(params.id);
   const { data: session } = useSession();
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [patient, setPatient] = useState<PatientDetail | null>(null);
   const [accessError, setAccessError] = useState<string | null>(null);
@@ -56,6 +58,20 @@ export default function PatientDetailClient() {
 
   const [tab, setTab] = useState<TabKey>("overview");
   const [visitOpen, setVisitOpen] = useState(false);
+  const [initialMedication, setInitialMedication] = useState<string | undefined>();
+
+  // Hand-off from the Medication & Drug Information Center: "?prescribe=<name>"
+  // opens this patient's visit dialog with that medication pre-filled. The
+  // param is stripped right away so refreshing or navigating back doesn't
+  // reopen the dialog a second time.
+  useEffect(() => {
+    const prescribe = searchParams.get("prescribe");
+    if (!prescribe) return;
+    setInitialMedication(prescribe);
+    setVisitOpen(true);
+    router.replace(`/dashboard/doc/patients/${patientId}`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   function loadClinicalData() {
     setListError(false);
@@ -304,9 +320,13 @@ export default function PatientDetailClient() {
 
       <VisitDialog
         open={visitOpen}
-        onClose={() => setVisitOpen(false)}
+        onClose={() => {
+          setVisitOpen(false);
+          setInitialMedication(undefined);
+        }}
         patientId={patientId}
         patientName={patient.user.name ?? "Patient"}
+        initialMedication={initialMedication}
         onSaved={loadClinicalData}
       />
     </AppShell>
